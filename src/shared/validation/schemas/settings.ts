@@ -11,6 +11,7 @@ import {
   isForbiddenCustomHeaderName,
 } from "@/shared/constants/upstreamHeaders";
 import { MAX_TIMER_TIMEOUT_MS } from "@/shared/utils/runtimeTimeouts";
+import { MAX_PROVIDER_COOLDOWN_SECONDS } from "@/shared/utils/cooldownDuration";
 import { AUTO_DISABLE_BANNED_SCOPES } from "@/shared/utils/autoDisableBanned";
 import { CLI_VERSION_KEYS, CLI_VERSION_PATTERN } from "@omniroute/open-sse/config/cliVersions.ts";
 
@@ -258,7 +259,48 @@ export const updateResilienceSchema = z
             rpm: z.number().int().min(1).optional(),
             concurrency: z.number().int().min(1).optional(),
             providerConcurrency: z.number().int().min(0).max(100_000).optional(),
-            rateLimitCooldownSeconds: z.number().int().min(1).max(21_600).optional(),
+            // Long operator overrides are honoured in full (up to 30 days): the
+            // "Custom…" retry-delay input feeds this via parseCooldownSeconds.
+            rateLimitCooldownSeconds: z
+              .number()
+              .int()
+              .min(1)
+              .max(MAX_PROVIDER_COOLDOWN_SECONDS)
+              .optional(),
+          })
+          .strict()
+      )
+      .optional(),
+    // Per-provider "custom usage link": maps a provider id to the same
+    // declarative quota-endpoint shape a connection declares in
+    // `providerSpecificData.quotaEndpoint`. Mirrors ProviderQuotaEndpointSettings
+    // in src/lib/resilience/settings/types.ts and normalizeEndpoint in
+    // open-sse/config/providerQuotaEndpoints.ts.
+    providerQuotaEndpoints: z
+      .record(
+        z.string().min(1),
+        z
+          .object({
+            url: z.string().min(1).max(2000),
+            method: z.enum(["GET", "POST"]).optional(),
+            auth: z.enum(["bearer", "x-api-key", "none"]).optional(),
+            headers: z.record(z.string().min(1).max(100), z.string().max(2000)).optional(),
+            plan: z.string().min(1).max(200).optional(),
+            quotas: z
+              .record(
+                z.string().min(1).max(100),
+                z
+                  .object({
+                    used: z.string().min(1).max(200).optional(),
+                    total: z.string().min(1).max(200).optional(),
+                    remaining: z.string().min(1).max(200).optional(),
+                    resetAt: z.string().min(1).max(200).optional(),
+                    currency: z.string().min(1).max(200).optional(),
+                    displayName: z.string().min(1).max(200).optional(),
+                  })
+                  .strict()
+              )
+              .optional(),
           })
           .strict()
       )
@@ -284,6 +326,7 @@ export const updateResilienceSchema = z
       value.profiles,
       value.defaults,
       value.providerQuotaOverrides,
+      value.providerQuotaEndpoints,
       value.credentialHealthCheck,
     ].some(Boolean);
     if (!provided) {

@@ -124,15 +124,22 @@ function normalizeLegacyPatch(body: JsonRecord): ResilienceSettingsPatch {
 }
 
 async function syncRuntimeSettings(resilienceSettings: ResilienceSettings) {
-  const [{ applyRequestQueueSettings }, { setProviderQuotaOverrides }] = await Promise.all([
+  const [
+    { applyRequestQueueSettings },
+    { setProviderQuotaOverrides },
+    { initProviderQuotaEndpoints },
+  ] = await Promise.all([
     import("@omniroute/open-sse/services/rateLimitManager"),
     import("@omniroute/open-sse/services/providerDefaultRateLimit"),
+    import("@omniroute/open-sse/config/providerQuotaEndpoints"),
   ]);
   await applyRequestQueueSettings(resilienceSettings.requestQueue);
   // #6846 Phase 2: re-apply per-provider RPM/concurrency overrides on the hot
   // path so a PATCH takes effect without a process restart. Mirrors the call in
   // rateLimitManager.ts::initializeRateLimits() (startup).
   setProviderQuotaOverrides(resilienceSettings.providerQuotaOverrides);
+  // Per-provider "custom usage links": keep the store in sync after every PATCH.
+  initProviderQuotaEndpoints(resilienceSettings.providerQuotaEndpoints);
 }
 
 /**
@@ -161,6 +168,7 @@ export async function GET() {
       providerCooldown: resilience.providerCooldown,
       quotaPreflight: resilience.quotaPreflight,
       providerQuotaOverrides: resilience.providerQuotaOverrides,
+      providerQuotaEndpoints: resilience.providerQuotaEndpoints,
       credentialHealthCheck: resilience.credentialHealthCheck,
       legacy: buildLegacyResilienceCompat(resilience),
     });
@@ -271,6 +279,12 @@ export async function PATCH(request) {
               body.providerQuotaOverrides as ResilienceSettingsPatch["providerQuotaOverrides"],
           }
         : {}),
+      ...(body.providerQuotaEndpoints
+        ? {
+            providerQuotaEndpoints:
+              body.providerQuotaEndpoints as ResilienceSettingsPatch["providerQuotaEndpoints"],
+          }
+        : {}),
       ...(body.credentialHealthCheck
         ? {
             credentialHealthCheck:
@@ -328,6 +342,7 @@ export async function PATCH(request) {
       providerCooldown: nextResilience.providerCooldown,
       quotaPreflight: nextResilience.quotaPreflight,
       providerQuotaOverrides: nextResilience.providerQuotaOverrides,
+      providerQuotaEndpoints: nextResilience.providerQuotaEndpoints,
       credentialHealthCheck: nextResilience.credentialHealthCheck,
       legacy: buildLegacyResilienceCompat(nextResilience),
     });

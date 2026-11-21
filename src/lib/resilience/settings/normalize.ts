@@ -9,6 +9,7 @@
  */
 
 import { resolveFeatureFlag } from "@/shared/utils/featureFlags";
+import { MAX_PROVIDER_COOLDOWN_SECONDS } from "@/shared/utils/cooldownDuration";
 import type {
   JsonRecord,
   ResilienceSettings,
@@ -25,6 +26,8 @@ import type {
   QuotaPreflightSettings,
   StreamRecoverySettings,
   ProviderQuotaOverrideSettings,
+  ProviderQuotaEndpointSettings,
+  ProviderQuotaEndpointMappingSettings,
   CredentialHealthCheckSettings,
 } from "./types";
 
@@ -497,10 +500,12 @@ function normalizeProviderQuotaOverrideEntry(raw: unknown): ProviderQuotaOverrid
   if (concurrency !== undefined) out.concurrency = concurrency;
   const providerConcurrency = pickTruncated(record.providerConcurrency, (n) => n >= 0);
   if (providerConcurrency !== undefined) out.providerConcurrency = providerConcurrency;
-  // Per-provider rate-limit retry delay: <=0/non-finite means "Auto" (dropped); capped at 6h.
+  // Per-provider rate-limit retry delay: <=0/non-finite means "Auto" (dropped).
+  // Long windows are honoured in full (up to 30 days) so "1w" survives a save;
+  // the API schema enforces the same ceiling.
   const cooldownSeconds = pickTruncated(record.rateLimitCooldownSeconds, (n) => n >= 1);
   if (cooldownSeconds !== undefined) {
-    out.rateLimitCooldownSeconds = Math.min(cooldownSeconds, 21_600);
+    out.rateLimitCooldownSeconds = Math.min(cooldownSeconds, MAX_PROVIDER_COOLDOWN_SECONDS);
   }
   return Object.keys(out).length > 0 ? out : null;
 }
@@ -519,6 +524,91 @@ export function normalizeProviderQuotaOverrides(
   for (const [provider, entry] of Object.entries(rawProviders)) {
     if (!provider) continue;
     const normalized = normalizeProviderQuotaOverrideEntry(entry);
+    if (normalized) out[provider] = normalized;
+  }
+  return out;
+}
+
+const QUOTA_ENDPOINT_MAPPING_KEYS: (keyof ProviderQuotaEndpointMappingSettings)[] = [
+  "used",
+  "total",
+  "remaining",
+  "resetAt",
+  "currency",
+  "displayName",
+];
+
+function isHttpUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.trim().length === 0) return false;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+// Mirrors normalizeEndpoint in open-sse/config/providerQuotaEndpoints.ts: an
+// entry without a usable URL is dropped, so one bad provider row can never
+// disable the rest of the map.
+function normalizeProviderQuotaEndpointEntry(raw: unknown): ProviderQuotaEndpointSettings | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const record = raw as Record<string, unknown>;
+  if (!isHttpUrl(record.url)) return null;
+
+  const out: ProviderQuotaEndpointSettings = { url: record.url.trim() };
+
+  if (typeof record.method === "string") {
+    const method = record.method.trim().toUpperCase();
+    if (method !== "GET" && method !== "POST") return null;
+    out.method = method;
+  }
+  if (typeof record.auth === "string") {
+    const auth = record.auth.trim().toLowerCase();
+    if (auth !== "bearer" && auth !== "x-api-key" && auth !== "none") return null;
+    out.auth = auth;
+  }
+  if (record.headers && typeof record.headers === "object" && !Array.isArray(record.headers)) {
+    const headers: Record<string, string> = {};
+    for (const [name, value] of Object.entries(record.headers as Record<string, unknown>)) {
+      if (name && typeof value === "string") headers[name] = value;
+    }
+    if (Object.keys(headers).length > 0) out.headers = headers;
+  }
+  if (typeof record.plan === "string" && record.plan.trim().length > 0) {
+    out.plan = record.plan.trim();
+  }
+  if (record.quotas && typeof record.quotas === "object" && !Array.isArray(record.quotas)) {
+    const quotas: Record<string, ProviderQuotaEndpointMappingSettings> = {};
+    for (const [name, mapping] of Object.entries(record.quotas as Record<string, unknown>)) {
+      if (!name || !mapping || typeof mapping !== "object" || Array.isArray(mapping)) continue;
+      const source = mapping as Record<string, unknown>;
+      const normalized: ProviderQuotaEndpointMappingSettings = {};
+      for (const key of QUOTA_ENDPOINT_MAPPING_KEYS) {
+        const value = source[key];
+        if (typeof value === "string" && value.trim().length > 0) normalized[key] = value.trim();
+      }
+      if (Object.keys(normalized).length > 0) quotas[name] = normalized;
+    }
+    if (Object.keys(quotas).length > 0) out.quotas = quotas;
+  }
+
+  return out;
+}
+
+/**
+ * Per-provider "custom usage link" map. Accepts an explicit object or falls
+ * back; drops providers whose entry has no usable http(s) URL.
+ */
+export function normalizeProviderQuotaEndpoints(
+  next: unknown,
+  fallback: Record<string, ProviderQuotaEndpointSettings>
+): Record<string, ProviderQuotaEndpointSettings> {
+  const rawProviders = asRecord(next ?? fallback);
+  const out: Record<string, ProviderQuotaEndpointSettings> = {};
+  for (const [provider, entry] of Object.entries(rawProviders)) {
+    if (!provider) continue;
+    const normalized = normalizeProviderQuotaEndpointEntry(entry);
     if (normalized) out[provider] = normalized;
   }
   return out;

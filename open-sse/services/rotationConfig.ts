@@ -354,6 +354,12 @@ export interface RotationRateLimitFallback {
   baseCooldownMs: number;
   newBackoffLevel: 0;
   usedUpstreamRetryHint: false;
+  /**
+   * Marks the cooldown as an explicit operator decision (`providerQuotaOverrides[..]
+   * .rateLimitCooldownSeconds`) so downstream caps (model-lockout `maxCooldownMs`) do not
+   * shrink it — a configured "7d" must park the connection for the full seven days.
+   */
+  operatorOverride: true;
   reason: string;
 }
 
@@ -376,6 +382,7 @@ export function rotationRateLimitFallback(
     baseCooldownMs: overrideMs,
     newBackoffLevel: 0,
     usedUpstreamRetryHint: false,
+    operatorOverride: true,
     reason,
   };
 }

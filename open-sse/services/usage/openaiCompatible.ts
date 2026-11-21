@@ -32,6 +32,9 @@
  * reads 0/0 looks exhausted, and an operator would reasonably act on that.
  */
 
+import { assertDispatchUrlAllowed, dispatchGuarded } from "../../executors/dispatchPin.ts";
+import { isConnectGuardRefusal } from "../../utils/connectGuardDispatcher.ts";
+import { getProviderQuotaEndpoint } from "../../config/providerQuotaEndpoints.ts";
 import { type UsageQuota, createQuotaFromUsage } from "./quota.ts";
 
 /**
@@ -41,6 +44,29 @@ import { type UsageQuota, createQuotaFromUsage } from "./quota.ts";
  * Provider Limits sync.
  */
 const QUOTA_ENDPOINT_TIMEOUT_MS = 15_000;
+
+/**
+ * Provider id handed to the dispatch guard. Compatible nodes are never local or
+ * self-hosted providers, so the guard applies the operator's provider URL policy
+ * exactly as it does for their chat dispatch.
+ */
+const QUOTA_GUARD_PROVIDER = "openai-compatible-quota";
+const QUOTA_ENDPOINT_BLOCKED_MESSAGE = "Quota endpoint blocked by the outbound URL policy.";
+
+/**
+ * Fallback dot-path mappings probed (in order, first hit wins) when a quota
+ * endpoint declares no explicit `quotas` mapping — e.g. a bare provider-level
+ * "custom usage link". Covers the flat and `{data|usage: {...}}` shapes that
+ * the common allowance endpoints (Token Harbor, new-api, CLI meters) return.
+ */
+const GENERIC_USAGE_MAPPINGS: OpenAiCompatibleQuotaMapping[] = [
+  { remaining: "remaining", total: "total", used: "used", resetAt: "resetAt" },
+  { remaining: "remaining", total: "limit", used: "used" },
+  { remaining: "data.remaining", total: "data.total", used: "data.used", resetAt: "data.resetAt" },
+  { remaining: "usage.remaining", total: "usage.total", used: "usage.used" },
+  { remaining: "quota.remaining", total: "quota.total", used: "quota.used" },
+  { remaining: "credits.remaining", total: "credits.total", used: "credits.used" },
+];
 
 export interface OpenAiCompatibleQuotaMapping {
   used?: string;
@@ -135,18 +161,21 @@ export function buildAuthHeaders(
  */
 export async function getOpenAiCompatibleUsage(
   apiKey: string | undefined,
-  providerSpecificData: Record<string, unknown> | null | undefined
+  providerSpecificData: Record<string, unknown> | null | undefined,
+  provider?: string | null
 ) {
+  // A connection-level endpoint always wins; otherwise fall back to the
+  // provider-level "custom usage link" (resilience.providerQuotaEndpoints).
   const endpoint = (providerSpecificData?.quotaEndpoint ??
+    getProviderQuotaEndpoint(provider) ??
     null) as OpenAiCompatibleQuotaEndpoint | null;
 
   if (!endpoint || typeof endpoint.url !== "string" || endpoint.url.length === 0) {
     return { message: "No quota endpoint configured for this connection." };
   }
-  const mappings = endpoint.quotas ?? {};
-  if (Object.keys(mappings).length === 0) {
-    return { message: "Quota endpoint configured without a `quotas` mapping." };
-  }
+  // Explicit window mappings (a connection can still declare them); a bare
+  // provider-level link has none, in which case we probe common shapes below.
+  const configuredMappings = endpoint.quotas ?? {};
 
   let body: unknown;
   try {
@@ -166,9 +195,21 @@ export async function getOpenAiCompatibleUsage(
   }
 
   const quotas: Record<string, UsageQuota> = {};
-  for (const [name, mapping] of Object.entries(mappings)) {
-    const quota = buildMappedQuota(body, mapping);
-    if (quota) quotas[name] = quota;
+  if (Object.keys(configuredMappings).length > 0) {
+    for (const [name, mapping] of Object.entries(configuredMappings)) {
+      const quota = buildMappedQuota(body, mapping);
+      if (quota) quotas[name] = quota;
+    }
+  } else {
+    // URL-only link: try the common allowance shapes, first hit wins, so an
+    // operator can point at a usage endpoint and still see a number.
+    for (const mapping of GENERIC_USAGE_MAPPINGS) {
+      const quota = buildMappedQuota(body, mapping);
+      if (quota) {
+        quotas.usage = quota;
+        break;
+      }
+    }
   }
 
   if (Object.keys(quotas).length === 0) {

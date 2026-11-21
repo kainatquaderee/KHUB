@@ -151,7 +151,7 @@ export async function getUsageForProvider(
     typeof provider === "string" &&
     (provider.startsWith("openai-compatible-") || provider.startsWith("anthropic-compatible-"))
   ) {
-    return await getOpenAiCompatibleUsage(apiKey, providerSpecificData);
+    return await getOpenAiCompatibleUsage(apiKey, providerSpecificData, provider);
   }
 
   switch (provider) {

@@ -242,6 +242,31 @@ export interface ProviderQuotaOverrideSettings {
   rateLimitCooldownSeconds?: number;
 }
 
+/** One quota window's dot-path mapping inside a provider custom usage link. */
+export interface ProviderQuotaEndpointMappingSettings {
+  used?: string;
+  total?: string;
+  remaining?: string;
+  resetAt?: string;
+  currency?: string;
+  displayName?: string;
+}
+
+/**
+ * Per-provider "custom usage link": an HTTP endpoint that reports the account's
+ * allowance (URL plus dot-path mappings), the same shape a connection declares
+ * in `providerSpecificData.quotaEndpoint`. A connection-level endpoint always
+ * wins; this is the provider-level fallback.
+ */
+export interface ProviderQuotaEndpointSettings {
+  url: string;
+  method?: string;
+  auth?: "bearer" | "x-api-key" | "none";
+  headers?: Record<string, string>;
+  plan?: string;
+  quotas?: Record<string, ProviderQuotaEndpointMappingSettings>;
+}
+
 export interface StreamRecoverySettings {
   /**
    * Opt-in transparent recovery of truncated upstream streams (free-claude-code port).
@@ -291,6 +316,7 @@ export interface ResilienceSettings {
   quotaPreflight: QuotaPreflightSettings;
   streamRecovery: StreamRecoverySettings;
   providerQuotaOverrides: Record<string, ProviderQuotaOverrideSettings>;
+  providerQuotaEndpoints: Record<string, ProviderQuotaEndpointSettings>;
   credentialHealthCheck: CredentialHealthCheckSettings;
 }
 
@@ -308,5 +334,6 @@ export interface ResilienceSettingsPatch {
   quotaPreflight?: Partial<QuotaPreflightSettings>;
   streamRecovery?: Partial<StreamRecoverySettings>;
   providerQuotaOverrides?: Record<string, Partial<ProviderQuotaOverrideSettings>>;
+  providerQuotaEndpoints?: Record<string, Partial<ProviderQuotaEndpointSettings>>;
   credentialHealthCheck?: Partial<CredentialHealthCheckSettings>;
 }

@@ -75,6 +75,7 @@ import SearchProviderCard from "./components/SearchProviderCard";
 import NoAuthProviderControls from "./components/NoAuthProviderControls";
 import AnonymousFallbackToggle from "./components/AnonymousFallbackToggle";
 import ProviderRetryDelaySelect from "./components/ProviderRetryDelaySelect";
+import ProviderUsageLinkCard from "./components/ProviderUsageLinkCard";
 import { useConfirmDialog } from "@/shared/hooks/useConfirmDialog";
 // providerText used by UpstreamProxyCard (Phase 1t.7)
 
@@ -633,6 +634,7 @@ export default function ProviderDetailPageClient() {
         />
       )}
       {!isUpstreamProxyProvider && <ProviderRetryDelaySelect providerId={providerId} />}
+      {!isUpstreamProxyProvider && <ProviderUsageLinkCard providerId={providerId} />}
       {!isUpstreamProxyProvider && (!isFreeNoAuth || providerSupportsPat) && (
         <Card>
           <ProviderAccountRoutingCard

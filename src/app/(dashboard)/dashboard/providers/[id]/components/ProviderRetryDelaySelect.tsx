@@ -12,10 +12,14 @@ import { Card } from "@/shared/components";
 import Icon from "@/shared/components/Icon";
 import Select from "@/shared/components/Select";
 import { useNotificationStore } from "@/store/notificationStore";
+import { formatCooldownSeconds, parseCooldownSeconds } from "@/shared/utils/cooldownDuration";
 import { providerText } from "../providerPageHelpers";
 
 export const RETRY_DELAY_AUTO = "auto";
-export const RETRY_DELAY_OPTION_SECONDS = [15, 30, 60, 120, 300, 600, 1800, 3600] as const;
+export const RETRY_DELAY_CUSTOM = "custom";
+export const RETRY_DELAY_OPTION_SECONDS = [
+  15, 30, 60, 120, 300, 600, 1800, 3600, 21600, 43200, 86400, 604800,
+] as const;
 
 type ProviderQuotaOverrideEntry = Record<string, number | undefined>;
 type ProviderQuotaOverrides = Record<string, ProviderQuotaOverrideEntry>;
@@ -50,12 +54,6 @@ export function retryDelaySelectValue(
 ): string {
   const seconds = overrides?.[providerId]?.rateLimitCooldownSeconds;
   return typeof seconds === "number" && seconds > 0 ? String(seconds) : RETRY_DELAY_AUTO;
-}
-
-function formatSeconds(seconds: number): string {
-  if (seconds % 3600 === 0) return `${seconds / 3600}h`;
-  if (seconds % 60 === 0) return `${seconds / 60}m`;
-  return `${seconds}s`;
 }
 
 /** Presets plus a stored non-preset value (set through the API), sorted ascending. */
@@ -147,8 +145,36 @@ export default function ProviderRetryDelaySelect({ providerId }: ProviderRetryDe
   const { overrides, loaded, saving, handleChange } = useRetryDelayOverrides(providerId);
 
   const title = providerText(t, "retryDelayTitle", "Retry delay");
-  const selected = retryDelaySelectValue(overrides, providerId);
-  const optionSeconds = retryDelayOptionSeconds(selected);
+  const storedValue = retryDelaySelectValue(overrides, providerId);
+  const isCustomStored =
+    storedValue !== RETRY_DELAY_AUTO &&
+    !(RETRY_DELAY_OPTION_SECONDS as readonly number[]).includes(Number(storedValue));
+  const [customMode, setCustomMode] = useState(false);
+  const showCustom = customMode || isCustomStored;
+  const [draft, setDraft] = useState("");
+  const [draftError, setDraftError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isCustomStored) setDraft(formatCooldownSeconds(Number(storedValue)) ?? "");
+  }, [isCustomStored, storedValue]);
+
+  const submitCustom = useCallback(async () => {
+    const seconds = parseCooldownSeconds(draft);
+    if (seconds === null) {
+      setDraftError(
+        providerText(
+          t,
+          "retryDelayCustomInvalid",
+          "Enter a duration such as 7d, 24h, 30m, 45s or 500ms"
+        )
+      );
+      return;
+    }
+    setDraftError(null);
+    await handleChange(String(seconds));
+  }, [draft, handleChange, t]);
+
+  const optionSeconds = retryDelayOptionSeconds(RETRY_DELAY_AUTO);
 
   return (
     <Card>
@@ -170,18 +196,58 @@ export default function ProviderRetryDelaySelect({ providerId }: ProviderRetryDe
           aria-label={title}
           compact
           className="w-auto shrink-0"
-          value={selected}
+          value={showCustom ? RETRY_DELAY_CUSTOM : storedValue}
           disabled={!loaded || saving}
           options={[
             { value: RETRY_DELAY_AUTO, label: providerText(t, "retryDelayAuto", "Auto") },
             ...optionSeconds.map((seconds) => ({
               value: String(seconds),
-              label: formatSeconds(seconds),
+              label: formatCooldownSeconds(seconds) ?? `${seconds}s`,
             })),
+            {
+              value: RETRY_DELAY_CUSTOM,
+              label: providerText(t, "retryDelayCustom", "Custom…"),
+            },
           ]}
-          onChange={(event) => void handleChange(event.target.value)}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (value === RETRY_DELAY_CUSTOM) {
+              setDraftError(null);
+              setCustomMode(true);
+              if (isCustomStored) setDraft(formatCooldownSeconds(Number(storedValue)) ?? "");
+              return;
+            }
+            setCustomMode(false);
+            setDraftError(null);
+            void handleChange(value);
+          }}
         />
       </div>
+      {showCustom ? (
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            aria-label={providerText(t, "retryDelayCustomLabel", "Custom retry delay")}
+            placeholder={providerText(t, "retryDelayCustomPlaceholder", "7d, 24h, 30m, 45s, 500ms")}
+            value={draft}
+            disabled={!loaded || saving}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void submitCustom();
+            }}
+            className="w-48 rounded-md border border-border bg-transparent px-2 py-1 text-sm"
+          />
+          <button
+            type="button"
+            disabled={!loaded || saving}
+            onClick={() => void submitCustom()}
+            className="rounded-md border border-border px-3 py-1 text-sm disabled:opacity-50"
+          >
+            {providerText(t, "retryDelayCustomApply", "Apply")}
+          </button>
+        </div>
+      ) : null}
+      {showCustom && draftError ? <p className="mt-1 text-xs text-danger">{draftError}</p> : null}
     </Card>
   );
 }

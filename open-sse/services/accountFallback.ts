@@ -96,6 +96,26 @@ export function retryHintBypassesMaxCooldownMs(
 ): boolean {
   return provenance === "header" || provenance === "google_rpc_retry_info";
 }
+
+/**
+ * True when a fallback carries the operator's explicit per-provider rate-limit delay
+ * (`providerQuotaOverrides[..].rateLimitCooldownSeconds`). Such a cooldown is honored in full and
+ * must not be shrunk to `maxCooldownMs` — a configured "7d" parks the connection for seven days.
+ */
+export function isOperatorOverrideFallback(fallback: unknown): boolean {
+  return (fallback as { operatorOverride?: boolean } | null | undefined)?.operatorOverride === true;
+}
+
+/** Structured provenances reflect the provider's own reset clock and may shorten an existing model lock (#CO-402). */
+export function isAuthoritativeRetryHintSource(
+  provenance: RetryHintProvenance | undefined
+): boolean {
+  return (
+    provenance === "header" ||
+    provenance === "google_rpc_retry_info" ||
+    provenance === "body_structured"
+  );
+}
 import {
   isSubscriptionQuotaText,
   buildSubscriptionQuotaFallback,
@@ -650,10 +670,14 @@ export async function recordCoreOwnedAntigravityQuotaState({
       exactCooldownMs:
         fallback.usedUpstreamRetryHint === true
           ? fallback.cooldownMs
-          : (fallback.quotaResetHintMs ?? null),
+          : isOperatorOverrideFallback(fallback)
+            ? fallback.cooldownMs
+            : (fallback.quotaResetHintMs ?? null),
       maxCooldownMs: profile.maxCooldownMs,
       scope: "exact",
-      exactCooldownIsUpstreamReset: retryHintBypassesMaxCooldownMs(fallback.retryHintSource),
+      exactCooldownIsUpstreamReset:
+        retryHintBypassesMaxCooldownMs(fallback.retryHintSource) ||
+        isOperatorOverrideFallback(fallback),
     }
   );
   if (lockout.cooldownMs > 0 && isProviderExhaustedReason(fallback)) {
@@ -2192,7 +2216,9 @@ export function checkFallbackError(
       return {
         ...fallbackResult,
         quotaResetHintMs,
-        retryHintSource: fallbackResult.retryHintSource ?? quotaResetHintSource,
+        retryHintSource:
+          (fallbackResult as { retryHintSource?: RetryHintProvenance }).retryHintSource ??
+          quotaResetHintSource,
       };
     }
 

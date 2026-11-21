@@ -23,6 +23,7 @@ import {
   normalizeQuotaPreflightSettings,
   normalizeStreamRecoverySettings,
   normalizeProviderQuotaOverrides,
+  normalizeProviderQuotaEndpoints,
   normalizeCredentialHealthCheckSettings,
   pruneResilienceSettingsToProvided,
 } from "./settings/normalize";
@@ -56,6 +57,8 @@ export type {
   StreamRecoverySettings,
   StreamThroughputWatchdogSettings,
   ProviderQuotaOverrideSettings,
+  ProviderQuotaEndpointSettings,
+  ProviderQuotaEndpointMappingSettings,
   CredentialHealthCheckSettings,
   ResilienceSettings,
   ResilienceSettingsPatch,
@@ -219,6 +222,10 @@ export const DEFAULT_RESILIENCE_SETTINGS: ResilienceSettings = {
   // provider registered in providerDefaultRateLimit.ts) uses its static
   // default until an operator adds an override here.
   providerQuotaOverrides: {},
+  // Per-provider "custom usage link" fallback: an endpoint description used
+  // when a connection has no `providerSpecificData.quotaEndpoint` of its own.
+  // Empty by default (opt-in per provider).
+  providerQuotaEndpoints: {},
   // Global default cadence for the background credential health check sweep.
   // 60 minutes: the sweep makes a real upstream probe against EVERY active
   // connection, so the previous 5-minute default cost 12 requests/hour per
@@ -329,6 +336,7 @@ function buildLegacyFallback(settings: JsonRecord): ResilienceSettings {
     quotaPreflight: DEFAULT_RESILIENCE_SETTINGS.quotaPreflight,
     streamRecovery: streamRecoveryDefaults,
     providerQuotaOverrides: DEFAULT_RESILIENCE_SETTINGS.providerQuotaOverrides,
+    providerQuotaEndpoints: DEFAULT_RESILIENCE_SETTINGS.providerQuotaEndpoints,
     credentialHealthCheck: DEFAULT_RESILIENCE_SETTINGS.credentialHealthCheck,
   };
 }
@@ -426,6 +434,10 @@ export function resolveResilienceSettings(
       current.providerQuotaOverrides,
       fallback.providerQuotaOverrides
     ),
+    providerQuotaEndpoints: normalizeProviderQuotaEndpoints(
+      current.providerQuotaEndpoints,
+      fallback.providerQuotaEndpoints
+    ),
     credentialHealthCheck: normalizeCredentialHealthCheckSettings(
       current.credentialHealthCheck,
       fallback.credentialHealthCheck
@@ -492,6 +504,10 @@ export function mergeResilienceSettings(
     providerQuotaOverrides: normalizeProviderQuotaOverrides(
       updates.providerQuotaOverrides,
       current.providerQuotaOverrides
+    ),
+    providerQuotaEndpoints: normalizeProviderQuotaEndpoints(
+      updates.providerQuotaEndpoints,
+      current.providerQuotaEndpoints
     ),
     credentialHealthCheck: normalizeCredentialHealthCheckSettings(
       updates.credentialHealthCheck,
