@@ -86,7 +86,7 @@ const CASES: Array<{
   },
 ];
 
-function readAt<S>(root: Record<string, unknown>, dotted: string): unknown {
+function readAt(root: Record<string, unknown>, dotted: string): unknown {
   return dotted.split(".").reduce<unknown>((acc, part) => {
     if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
     return undefined;

@@ -153,6 +153,59 @@ export function buildAuthHeaders(
 }
 
 /**
+ * Outcome of a guarded usage-link probe: the outbound URL policy refused the
+ * target before anything was sent, or the guarded dispatch reached it.
+ */
+export type UsageLinkProbeResult =
+  | { blocked: true; message: string }
+  | { blocked: false; response: Response };
+
+/**
+ * Probe an operator-supplied usage link the way the provider dispatch path
+ * fetches outbound URLs: `assertDispatchUrlAllowed` refuses a blocked target
+ * before any socket opens, then `dispatchGuarded` applies the connect-time guard
+ * and the no-follow redirect policy, with the connection's own credential
+ * attached through {@link buildAuthHeaders}.
+ *
+ * Lives behind this usage service so an API route never imports an executor
+ * implementation directly.
+ */
+export async function probeOpenAiCompatibleUsageLink(
+  url: string,
+  endpoint: OpenAiCompatibleQuotaEndpoint,
+  secret: string | undefined,
+  timeoutMs: number
+): Promise<UsageLinkProbeResult> {
+  try {
+    assertDispatchUrlAllowed(QUOTA_GUARD_PROVIDER, url);
+  } catch {
+    // Deliberately not echoing the error: it carries the operator-supplied URL.
+    return { blocked: true, message: QUOTA_ENDPOINT_BLOCKED_MESSAGE };
+  }
+
+  try {
+    const response = await dispatchGuarded(
+      QUOTA_GUARD_PROVIDER,
+      url,
+      {
+        method: "GET",
+        headers: buildAuthHeaders(endpoint, secret),
+        signal: AbortSignal.timeout(timeoutMs),
+        // A redirect is never followed, so it cannot carry the credential to another host.
+        redirect: "manual",
+      },
+      { providerSpecificData: { baseUrl: url } }
+    );
+    return { blocked: false, response };
+  } catch (error) {
+    if (isConnectGuardRefusal(error)) {
+      return { blocked: true, message: QUOTA_ENDPOINT_BLOCKED_MESSAGE };
+    }
+    throw error;
+  }
+}
+
+/**
  * Read the connection's declared quota endpoint and map it onto `UsageQuota`.
  *
  * Returns a `message` rather than throwing on every failure path: an
