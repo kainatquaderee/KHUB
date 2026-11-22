@@ -42,6 +42,8 @@ interface ProviderPageHeaderProps {
    * "this link supports OmniRoute" disclosure.
    */
   isReferralLink?: boolean;
+  /** True when this provider's healthy account count is at/below the operator threshold. */
+  attentionNeeded?: boolean;
 }
 
 export default function ProviderPageHeader({
@@ -53,6 +55,7 @@ export default function ProviderPageHeader({
   onOpenTutorial,
   t,
   isReferralLink = false,
+  attentionNeeded = false,
 }: ProviderPageHeaderProps) {
   // Kimi (Moonshot AI) official-partnership aff links (2026-07): the header
   // website link doubles as the CTA for kimi-coding/kimi-web/moonshot's
@@ -141,6 +144,12 @@ export default function ProviderPageHeader({
       description={
         <span className="flex flex-wrap items-center gap-2">
           <span>{t("connectionCountLabel", { count: connectionsCount })}</span>
+          {attentionNeeded && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
+              <Icon name="notification_important" size={12} />
+              {providerText(t, "attention.badge", "Attention needed")}
+            </span>
+          )}
           {showPartnerNote && providerInfo.website && (
             <span className="text-[10px] font-medium uppercase tracking-wide text-text-muted/70">
               {kimiPartnerLinkNote}

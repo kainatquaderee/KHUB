@@ -11,6 +11,11 @@ import { CONNECTION_TEST_PROMPT_MAX_LENGTH } from "@/shared/constants/connection
 import { COMBO_CONFIG_MODES } from "@/shared/constants/comboConfigMode";
 import { MAX_REQUEST_BODY_LIMIT_MB, MIN_REQUEST_BODY_LIMIT_MB } from "@/shared/constants/bodySize";
 import {
+  MAX_MODEL_LOCKOUT_BASE_COOLDOWN_MS,
+  MAX_MODEL_LOCKOUT_COOLDOWN_MS,
+} from "@/shared/constants/modelLockout";
+import { MAX_PROVIDER_ATTENTION_THRESHOLD } from "@/shared/constants/providerAttention";
+import {
   PROXY_BULK_IMPORT_LIMIT_MAX,
   PROXY_BULK_IMPORT_LIMIT_MIN,
 } from "@/shared/constants/proxyBulkImport";
@@ -609,6 +614,15 @@ export const updateSettingsSchema = z.object({
   cliproxyapi_api_key: z.string().max(500).optional(),
   // CLIProxyAPI model mapping (Record<string, string>)
   cliproxyapi_model_mapping: z.record(z.string(), z.string()).optional(),
+  // Provider "attention needed" warning: the healthy-account count at or below
+  // which a provider is flagged. Negative values are meaningless; there is no
+  // upper policy bound (the operator decides), only an overflow guard.
+  providerAttentionThreshold: z
+    .number()
+    .int()
+    .min(0, "Must be at least 0")
+    .max(MAX_PROVIDER_ATTENTION_THRESHOLD, "Value exceeds the representable range")
+    .optional(),
   // Model lockout settings
   modelLockout: z
     .object({
@@ -618,13 +632,16 @@ export const updateSettingsSchema = z.object({
         .number()
         .int()
         .min(5000, "Must be at least 5,000ms")
-        .max(600000, "Must be at most 600,000ms (10 min)")
+        .max(MAX_MODEL_LOCKOUT_BASE_COOLDOWN_MS, "Must be at most 600,000ms (10 min)")
         .optional(),
+      // No product ceiling: an operator may need days (a provider-stated reset,
+      // or the backoff ladder reaching a weekly cap). The bound below only keeps
+      // the value inside Date's representable range — see the constant.
       maxCooldownMs: z
         .number()
         .int()
         .min(5000, "Must be at least 5,000ms")
-        .max(3600000, "Must be at most 3,600,000ms (1 h)")
+        .max(MAX_MODEL_LOCKOUT_COOLDOWN_MS, "Duration exceeds the representable date range")
         .optional(),
       maxBackoffSteps: z
         .number()

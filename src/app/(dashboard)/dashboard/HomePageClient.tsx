@@ -14,6 +14,7 @@ import { CardSkeleton, Button, Modal } from "@/shared/components";
 import ProviderIcon from "@/shared/components/ProviderIcon";
 import { AI_PROVIDERS, NOAUTH_PROVIDERS, OAUTH_PROVIDERS } from "@/shared/constants/providers";
 import {
+  countLimitedAccounts,
   isProviderConnectionConnected,
   isProviderConnectionErrored,
 } from "@/shared/utils/providerConnectionStatus";
@@ -60,6 +61,8 @@ type ProviderSummaryItem = {
   total: number;
   connected: number;
   errors: number;
+  /** Cooldown-limited accounts (rate_limited / model_locked / cooling_down). */
+  warned?: number;
   modelCount: number;
   authType: "free" | "oauth" | "apikey" | string;
 };
@@ -446,6 +449,10 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
       const errors = connections.filter((connection) =>
         isProviderConnectionErrored(connection)
       ).length;
+      // Cooldown-limited accounts are neither connected nor errored, but they are
+      // not idle either: keep them in a distinct count so the topology and the
+      // overview card can surface them instead of dropping them to grey "idle".
+      const warned = countLimitedAccounts(connections);
 
       const providerKeys = new Set([providerId, providerInfo.alias].filter(Boolean));
       const providerModels = models.filter((m) => providerKeys.has(m.provider));
@@ -462,6 +469,7 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
         total: connections.length,
         connected,
         errors,
+        warned,
         modelCount: providerModels.length,
         authType,
       };
@@ -487,13 +495,15 @@ export default function HomePageClient({ machineId }: HomePageClientProps) {
     // Connection-health per provider, so the topology node reflects "what is connected"
     // at rest (green healthy / red error) instead of going blank between requests. A
     // provider with ≥1 healthy connection is "active"; if none are healthy but some are
-    // errored it is "error"; otherwise "idle". Live/recent traffic still overrides this.
+    // errored — or merely limited (rate_limited / model_locked / cooling_down), which the
+    // topology has no separate state for — it is "error" (attention), not grey "idle".
+    // Live/recent traffic still overrides this.
     const healthByProvider = new Map<string, ProviderHealth>();
     for (const stat of providerStats) {
       const canonical = normalizeProviderId(stat.id);
       if (!canonical) continue;
       const health: ProviderHealth =
-        stat.connected > 0 ? "active" : stat.errors > 0 ? "error" : "idle";
+        stat.connected > 0 ? "active" : stat.errors > 0 || stat.warned > 0 ? "error" : "idle";
       // An enabled no-auth provider has no connections to test and is always reachable.
       const noAuthHealthy =
         stat.total === 0 && isEnabledNoAuthProvider(canonical, blockedProviders) ? "active" : null;
@@ -1179,7 +1189,13 @@ function ProviderOverviewCard({
   const tc = useTranslations("common");
 
   const statusVariant =
-    item.errors > 0 ? "text-error" : item.connected > 0 ? "text-success" : "text-text-muted";
+    item.errors > 0
+      ? "text-error"
+      : item.connected > 0
+        ? "text-success"
+        : (item.warned ?? 0) > 0
+          ? "text-warning"
+          : "text-text-muted";
 
   const authTypeConfig = {
     "no-auth": { color: "bg-text-muted/30", label: t("noAuthLabel") },

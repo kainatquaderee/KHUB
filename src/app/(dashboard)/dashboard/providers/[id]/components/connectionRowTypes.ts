@@ -1,4 +1,5 @@
 import type { PrefixShadowedDiagnostic } from "@/shared/utils/providerConnectionStatus";
+import type { CooldownStatusValue } from "@/lib/resilience/cooldownStatuses";
 import type { CodexGlobalServiceMode } from "@/lib/providers/codexFastTier";
 import type { CodexAccountPoolProjection } from "@omniroute/open-sse/services/codexAccount/index.ts";
 import type { DiscoveryStateRecord } from "@/lib/db/discoveryState";
@@ -16,6 +17,11 @@ export interface ConnectionRowConnection {
   rateLimitAutoProtected?: boolean;
   testStatus?: string;
   isActive?: boolean;
+  /**
+   * The Cooldown Manager's verdict for this account, sent by GET /api/providers.
+   * Absent on older payloads/caches — treat it as "healthy" then.
+   */
+  cooldownStatus?: CooldownStatusValue;
   priority?: number;
   lastError?: string;
   lastErrorType?: string;

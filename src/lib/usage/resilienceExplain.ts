@@ -2,6 +2,7 @@ import pino from "pino";
 
 import { isModelExcludedByConnection } from "@/domain/connectionModelRules";
 import { getProviderConnections } from "@/lib/db/providers";
+import { hasUnrecoveredLimitError } from "@/lib/resilience/limitErrorState";
 import { getCircuitBreaker } from "@/shared/utils/circuitBreaker";
 import { getModelLockoutInfo } from "@omniroute/open-sse/services/accountFallback.ts";
 import {
@@ -240,6 +241,33 @@ function accountReason(
           testStatus: status,
           lastErrorType: connection.lastErrorType ?? null,
           errorCode: connection.errorCode ?? null,
+        },
+      },
+    };
+  }
+
+  // No live cooldown timer and not terminal, but the last recorded failure is
+  // still an unrecovered rate-limit/quota error (providers such as Token Harbor
+  // record a 429 "free allowance used" as `errorCode`/`lastErrorType` without
+  // ever setting `rateLimitedUntil`). The Cooldown Manager reads this via
+  // `hasUnrecoveredLimitError`; routing should skip the connection too.
+  //
+  // Deliberately AFTER the terminal check: `credits_exhausted` is both a terminal
+  // status and a `LIMIT_ERROR_TYPES` member, and terminal means "will not
+  // self-recover", so it must win over this temporary-limit explanation.
+  if (hasUnrecoveredLimitError(connection)) {
+    return {
+      state: "skipped",
+      reason: {
+        scope: "connection",
+        code: "connection_limit_error",
+        connectionId,
+        message: `Connection ${connectionId} is skipped because its last recorded failure was a rate-limit/quota-class error with no cooldown recorded.`,
+        evidence: {
+          lastErrorType: connection.lastErrorType ?? null,
+          errorCode: connection.errorCode ?? null,
+          backoffLevel: connection.backoffLevel ?? null,
+          rateLimitedUntil: connection.rateLimitedUntil ?? null,
         },
       },
     };

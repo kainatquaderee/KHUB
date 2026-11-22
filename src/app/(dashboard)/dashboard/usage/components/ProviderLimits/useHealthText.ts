@@ -30,6 +30,7 @@ const SIMPLE_REASON_KEYS: Partial<Record<HealthReason["type"], string>> = {
   noRuntime: "healthNoRuntime",
   previousFailure: "healthPreviousFailure",
   previousSnapshot: "healthPreviousSnapshot",
+  rateLimited: "healthRateLimited",
 };
 function formatBypass(reason: HealthReason): string {
   const keys = {
@@ -106,7 +107,7 @@ export function useHealthText() {
     const r = account.reasons.find((candidate) =>
       ({
         paused: ["paused"],
-        critical: ["terminal", "cooldown", "scopeCooldown", "peakHour", "quota"],
+        critical: ["terminal", "cooldown", "scopeCooldown", "peakHour", "quota", "rateLimited"],
         alert: ["quota", "lockout", "scopeCooldown", "peakHour"],
         empty: ["quotaError", "noQuota", "noRuntime"],
         ok: ["previousFailure", "awaitingSync"],

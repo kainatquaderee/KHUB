@@ -17,6 +17,7 @@ import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { resolveModelLockoutSettings } from "@/lib/resilience/modelLockoutSettings";
+import { resolveProviderAttentionThreshold } from "@/lib/resilience/attentionThresholdSettings";
 import {
   validateProxyUrl,
   upsertUpstreamProxyConfig,
@@ -429,6 +430,12 @@ export async function PATCH(request: Request) {
       body.modelLockout = resolveModelLockoutSettings({
         modelLockout: body.modelLockout as Record<string, unknown>,
       }) as typeof body.modelLockout;
+    }
+
+    // Sanitize the provider attention threshold the same way, so a stored value
+    // always matches what the schema allows on write.
+    if (body.providerAttentionThreshold !== undefined) {
+      body.providerAttentionThreshold = resolveProviderAttentionThreshold(body);
     }
 
     const oidcPolicyError = await validateOidcPolicyPatch(body);

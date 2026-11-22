@@ -20,6 +20,8 @@ import type {
 } from "@/types/resilience";
 import { readRotationSnapshot } from "@omniroute/open-sse/services/rotationAttribution";
 import { isRotationAttributionEnabled } from "@/shared/utils/featureFlags";
+import { readConnectionCooldownStatuses } from "@/lib/resilience/cooldownStatusLookup";
+import type { CooldownStatus } from "@/lib/resilience/cooldownManager";
 
 // Explicit column whitelist -- getRawProviderConnections() DEFAULTS TO SELECT *,
 // so passing columns is MANDATORY to avoid leaking api_key, access_token,
@@ -95,6 +97,7 @@ function toConnectionState(
   row: Record<string, unknown>,
   breakersMap: Map<string, BreakerWithHistory>,
   lockoutsMap: Map<string, ModelLockoutInfo[]>,
+  cooldownStatuses: Map<string, CooldownStatus>,
   now: number, // server timestamp captured before fetch (avoids drift)
   rotationByConnection?: Map<string, RotationAccountState[] | null>
 ): ConnectionState {
@@ -108,12 +111,18 @@ function toConnectionState(
   const rawCooldown = rateLimitedUntil ? cooldownUntilMs(rateLimitedUntil) - now : 0;
   const cooldownRemainingMs = Number.isFinite(rawCooldown) ? Math.max(0, rawCooldown) : 0;
 
-  // Derive connection status for UI badge (terminal states take priority over cooldown)
+  // Derive connection status for UI badge (terminal states take priority over cooldown).
+  // `rate_limited` comes from the Cooldown Manager, which also flags 429s recorded
+  // WITHOUT a `rateLimitedUntil` timer (providers such as Token Harbor). Ordering it
+  // before the timer check keeps a rate-limited account from rendering as Healthy.
+  const cooldownStatus = cooldownStatuses.get(String(row.id ?? ""));
   let connectionStatus: ConnectionState["connectionStatus"] = "healthy";
   if (testStatus && TERMINAL_CONNECTION_STATUSES.has(testStatus)) {
     connectionStatus = "terminal"; // permanent unavailability takes priority
   } else if (breaker?.state === "OPEN") {
     connectionStatus = "circuit_open";
+  } else if (cooldownStatus === "rate_limited") {
+    connectionStatus = "rate_limited";
   } else if (cooldownRemainingMs > 0) {
     connectionStatus = "cooling_down";
   }
@@ -214,6 +223,12 @@ export async function GET(req: NextRequest) {
       console.error("[API] resilience/connections breaker module error:", err);
     }
 
+    // The Cooldown Manager's own per-connection verdict, so this page can never
+    // disagree with it about a rate-limited account. A read failure degrades to
+    // no verdict (previous behaviour) and is surfaced like any other source.
+    const cooldownRead = await readConnectionCooldownStatuses();
+    if (cooldownRead.failed) degraded.push("cooldownStatus");
+
     // Capture window timestamps AFTER source fetches complete (includes lazy recovery transitions)
     const now = Date.now();
     const sinceMs = windowMs ? now - windowMs : 0;
@@ -272,7 +287,14 @@ export async function GET(req: NextRequest) {
       }
     }
     const connections = rawConnections.map((row) =>
-      toConnectionState(row, breakersMap, lockoutsMap, now, rotationByConnection)
+      toConnectionState(
+        row,
+        breakersMap,
+        lockoutsMap,
+        cooldownRead.statuses,
+        now,
+        rotationByConnection
+      )
     );
     // Total count (separate query; falls back to connections.length on failure)
     let totalConnections = connections.length;
@@ -287,6 +309,11 @@ export async function GET(req: NextRequest) {
     }
     // When totalConnections > CONNECTION_LIMIT, counts reflect only the first LIMIT rows
     const coolingDownCount = connections.filter((c) => c.isCoolingDown).length;
+    // A rate-limited connection (429 without a timer) is neither cooling nor healthy,
+    // so it gets its own count instead of being silently folded into "healthy".
+    const rateLimitedCount = connections.filter(
+      (c) => c.connectionStatus === "rate_limited"
+    ).length;
     // Count all non-healthy breaker states (OPEN + HALF_OPEN + DEGRADED) for accurate summary
     const unhealthyBreakerCount = connections.filter(
       (c) =>
@@ -309,7 +336,14 @@ export async function GET(req: NextRequest) {
       connections,
       breakers,
       window: windowMeta,
-      meta: { totalConnections, coolingDownCount, unhealthyBreakerCount, countsCapped, degraded },
+      meta: {
+        totalConnections,
+        coolingDownCount,
+        rateLimitedCount,
+        unhealthyBreakerCount,
+        countsCapped,
+        degraded,
+      },
     };
     return NextResponse.json(response);
   } catch (err) {

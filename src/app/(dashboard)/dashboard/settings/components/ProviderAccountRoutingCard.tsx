@@ -13,7 +13,14 @@ type ProviderStrategyOverride = {
 
 type Props = {
   providerKey: string;
+  /** Total accounts on the provider. */
   connectionCount: number;
+  /**
+   * Accounts routing can use right now (enabled, not cooling, not exhausted).
+   * Omit to hide the readout — the provider page passes it from the live
+   * connection list via `countHealthyAccounts`.
+   */
+  healthyCount?: number;
 };
 
 const STRATEGY_OPTIONS = ACCOUNT_FALLBACK_STRATEGY_VALUES.filter((v) =>
@@ -114,18 +121,54 @@ function useProviderAccountRoutingState(providerKey: string) {
   return { strategy, setStrategy, stickyLimit, setStickyLimit, busy, save };
 }
 
-export default function ProviderAccountRoutingCard({ providerKey, connectionCount }: Props) {
+export default function ProviderAccountRoutingCard({
+  providerKey,
+  connectionCount,
+  healthyCount,
+}: Props) {
   const t = useTranslations("settings");
   const { strategy, setStrategy, stickyLimit, setStickyLimit, busy, save } =
     useProviderAccountRoutingState(providerKey);
 
   if (connectionCount < 2) return null;
 
+  // `healthy / total`: how many accounts routing can actually use right now —
+  // not cooling off (no live `rateLimitedUntil`), not exhausted/banned, and not
+  // carrying an unrecovered rate-limit/quota error.
+  const healthy = typeof healthyCount === "number" ? healthyCount : null;
+  const healthyTone =
+    healthy === null
+      ? ""
+      : healthy >= connectionCount
+        ? "border-success/30 bg-success/10 text-success"
+        : healthy > 0
+          ? "border-warning/30 bg-warning/10 text-warning"
+          : "border-error/30 bg-error/10 text-error";
+  const healthyHint =
+    typeof t.has === "function" && t.has("providerAccountHealthyHint")
+      ? t("providerAccountHealthyHint")
+      : "Accounts routable now (enabled, not cooling, no unrecovered rate-limit/quota error) out of total accounts";
+
   return (
     <div className="mb-4 rounded-lg border border-border bg-bg-subtle p-3">
-      <p className="text-sm font-medium">{t("providerAccountRoutingTitle")}</p>
-      <p className="text-xs text-text-muted mb-3">{t("providerAccountRoutingDesc")}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">{t("providerAccountRoutingTitle")}</p>
+          <p className="text-xs text-text-muted">{t("providerAccountRoutingDesc")}</p>
+        </div>
+        {healthy !== null && (
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium tabular-nums ${healthyTone}`}
+            title={healthyHint}
+            aria-label={healthyHint}
+          >
+            {healthy}
+            <span className="opacity-60">/</span>
+            {connectionCount}
+          </span>
+        )}
+      </div>
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select
           compact
           label={t("providerRoutingStrategy")}

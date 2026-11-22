@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from "@/shared/utils/fetchTimeout";
+import { isCooldownStatus } from "@/lib/resilience/cooldownStatuses";
 
 /** Thrown when the dashboard cannot list connections because the caller is not authenticated. */
 export class ConnectionsAuthError extends Error {
@@ -11,6 +12,21 @@ export class ConnectionsAuthError extends Error {
 }
 
 const isAuthStatus = (status: number) => status === 401 || status === 403;
+
+/**
+ * Drops a `cooldownStatus` this build does not understand instead of trusting it.
+ *
+ * The field comes from `/api/providers|client`, where a Cooldown Manager read can
+ * legitimately fail. Absence already means "no verdict" downstream, so an
+ * unrecognised value must behave the same rather than being treated as non-healthy.
+ */
+function sanitizeCooldownStatus<T>(connection: T): T {
+  if (!connection || typeof connection !== "object") return connection;
+  const record = connection as Record<string, unknown>;
+  if (!("cooldownStatus" in record) || isCooldownStatus(record.cooldownStatus)) return connection;
+  const { cooldownStatus: _invalid, ...valid } = record;
+  return valid as T;
+}
 
 /**
  * Lists provider connections for the quota UIs.
@@ -32,7 +48,7 @@ export async function fetchDashboardConnections<T = Record<string, unknown>>(
   }
   if (!response.ok) throw new Error("Failed");
   const data = await response.json();
-  return (data?.connections || []) as T[];
+  return ((data?.connections || []) as T[]).map(sanitizeCooldownStatus);
 }
 
 /** i18n keys (usage namespace) for the empty quota card: auth-required vs. truly no connections. */

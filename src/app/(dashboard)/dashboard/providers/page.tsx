@@ -27,6 +27,7 @@ import { SectionHeader } from "@omniroute/ui-kit/page-header";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getErrorCode, getRelativeTime } from "@/shared/utils";
 import {
+  countLimitedAccounts,
   isProviderConnectionConnected,
   isProviderConnectionErrored,
 } from "@/shared/utils/providerConnectionStatus";
@@ -75,6 +76,15 @@ import NoAuthProvidersSection from "./components/NoAuthProvidersSection";
 import HighlightableProviderCard from "./components/HighlightableProviderCard";
 import ProviderCountBadge from "./components/ProviderCountBadge";
 import ProviderSummaryCard from "./components/ProviderSummaryCard";
+import ProvidersAttentionBanner from "./components/ProvidersAttentionBanner";
+import { countHealthyAccounts } from "./[id]/components/connectionHealth";
+import {
+  attentionInputsFromConnectionFlags,
+  isProviderAttentionNeeded,
+} from "@/lib/providers/attentionThreshold";
+import { resolveProviderAttentionThreshold } from "@/lib/resilience/attentionThresholdSettings";
+import { DEFAULT_PROVIDER_ATTENTION_THRESHOLD } from "@/shared/constants/providerAttention";
+import { useProviderAttention } from "./hooks/useProviderAttention";
 import DeprecatedProviderBanner from "./components/DeprecatedProviderBanner";
 import {
   buildCompactProviderEntriesForPage,
@@ -229,6 +239,11 @@ async function loadOauthEnvRepairStatus(): Promise<{
 function ProvidersPageContent() {
   const router = useRouter();
   const [connections, setConnections] = useState<any[]>([]);
+  // One render-stable clock for the account-health predicates (react-hooks/purity).
+  const [pageClock] = useState(() => Date.now());
+  const [attentionThreshold, setAttentionThreshold] = useState(
+    DEFAULT_PROVIDER_ATTENTION_THRESHOLD
+  );
   const [providerNodes, setProviderNodes] = useState<any[]>([]);
   const [ccCompatibleProviderEnabled, setCcCompatibleProviderEnabled] = useState(false);
   const [blockedProviders, setBlockedProviders] = useState<string[]>([]);
@@ -311,6 +326,7 @@ function ProvidersPageContent() {
         if (data.expirations) setExpirations(data.expirations);
         if (data.blockedProviders) setBlockedProviders(data.blockedProviders);
         setCodexGlobalServiceMode(getCodexGlobalServiceMode(data.settings));
+        setAttentionThreshold(resolveProviderAttentionThreshold(data.settings));
         setOpenRouterProviderStats(data.openRouterProviderStats);
       } catch (error) {
         console.log("Error fetching data:", error);
@@ -459,13 +475,30 @@ function ProvidersPageContent() {
       ? getRelativeTime(warningLatestFailureAt)
       : null;
 
+    // Cooldown-limited accounts (rate_limited / model_locked / cooling_down) are
+    // neither connected nor errored, so without this they would render badge-less
+    // on the card. It has no dedicated limited badge, so route them into the
+    // existing warning slot (#10261) rather than dropping them silently.
+    const warned = countLimitedAccounts(providerConnections);
+
+    // Healthy count comes from the Cooldown Manager's verdict, so the warning
+    // agrees with the provider card and the detail page.
+    const healthy = countHealthyAccounts(providerConnections, pageClock).healthy;
+    const attentionNeeded = isProviderAttentionNeeded(
+      attentionInputsFromConnectionFlags(providerConnections, healthy),
+      attentionThreshold
+    );
+
     return {
       connected,
       error,
-      warning,
+      warning: warning + warned,
+      warned,
       warningMaxFailures,
       warningLastFailureRelative,
       total,
+      healthy,
+      attentionNeeded,
       errorCode,
       errorTime,
       allDisabled,
@@ -791,6 +824,18 @@ function ProvidersPageContent() {
     ...staticProviderEntriesAll,
     ...compatibleProviderEntriesAll,
   ]);
+  // Per-provider attention subjects for the roll-up banner and the one-time
+  // toast watcher. Counts come from `getProviderStats` above, so this can never
+  // disagree with the card badge or the detail page.
+  const attentionSubjects = dashboardProviderEntriesAll.map((entry) => ({
+    id: entry.providerId,
+    name: String((entry.provider as { name?: unknown }).name ?? entry.providerId),
+    healthy: Number(entry.stats.healthy ?? 0),
+    total: Number(entry.stats.total ?? 0),
+    attentionNeeded: entry.stats.attentionNeeded === true,
+  }));
+  const attentionProviders = attentionSubjects.filter((subject) => subject.attentionNeeded);
+  useProviderAttention(attentionSubjects, attentionThreshold);
   const freeSectionEntriesAll = dashboardProviderEntriesAll.filter(providerEntryHasFree);
   const freeSectionEntries = filterConfiguredProviderEntries(
     freeSectionEntriesAll,
@@ -928,6 +973,7 @@ function ProvidersPageContent() {
           </Card>
         )}
 
+        <ProvidersAttentionBanner providers={attentionProviders} />
         <ProviderSummaryCard
           activeCategory={activeCategory}
           activeServiceKind={activeServiceKind}

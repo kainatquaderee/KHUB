@@ -94,6 +94,9 @@ export function runtimeCooldownEvidence(
   const runtime = row || connection;
   const { derived, until } = resolveCooldownDeadline(runtime, row, fresh, summaryTime);
   const lockouts: HealthCooldown["lockouts"] = fresh ? summary?.lockouts || [] : [];
+  // A fresh Cooldown Manager row is the newest verdict; without one, fall back to
+  // the verdict carried by the connection payload from /api/providers|client.
+  const cooldownStatus = (row && fresh ? row.status : connection.cooldownStatus) ?? null;
   return {
     row,
     runtime,
@@ -101,6 +104,7 @@ export function runtimeCooldownEvidence(
     derived,
     until,
     lockouts,
+    cooldownStatus,
     isActive: resolveActiveState(
       connection,
       summary,

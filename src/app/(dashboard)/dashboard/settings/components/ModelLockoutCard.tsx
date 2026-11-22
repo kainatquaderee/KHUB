@@ -213,7 +213,10 @@ export default function ModelLockoutCard() {
   function validateDraft(d: ModelLockoutSettings): string | null {
     if (d.baseCooldownMs < 5000 || d.baseCooldownMs > 600000)
       return t("modelLockoutBaseRangeError");
-    if (d.maxCooldownMs < 5000 || d.maxCooldownMs > 3600000) return t("modelLockoutMaxRangeError");
+    // Max Cooldown has no upper bound: how long a model waits is an operator
+    // decision, and a provider-stated reset can be days out (`body_absolute`).
+    if (!Number.isFinite(d.maxCooldownMs) || d.maxCooldownMs < 5000)
+      return t("modelLockoutMaxRangeError");
     if (d.maxCooldownMs < d.baseCooldownMs) return t("modelLockoutOrderError");
     if (d.maxBackoffSteps < 0 || d.maxBackoffSteps > 20) return t("modelLockoutStepsRangeError");
     return null;
@@ -478,7 +481,6 @@ export default function ModelLockoutCard() {
               label={t("modelLockoutMaxCooldown")}
               value={draft.maxCooldownMs}
               min={draft.baseCooldownMs}
-              max={3600000}
               suffix="ms"
               hint={t("modelLockoutMaxCooldownHint")}
               onChange={(maxCooldownMs) => setDraft((prev) => ({ ...prev, maxCooldownMs }))}

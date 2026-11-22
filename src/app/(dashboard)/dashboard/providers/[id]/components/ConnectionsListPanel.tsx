@@ -21,6 +21,7 @@ import { supportsProviderQuota } from "@/shared/utils/providerQuotaVisibility";
 import type { ConnectionDeleteConfirmState } from "../hooks/useConnectionDeleteConfirm";
 import type { ProviderQuotaCacheEntry } from "../hooks/useProviderQuota";
 import { filterConnectionsByQuery } from "../connectionsSearchFilter";
+import { isHealthyAccount } from "./connectionHealth";
 
 type ConnectionsListPanelProps = {
   connections: ConnectionRowConnection[];
@@ -237,10 +238,15 @@ export default function ConnectionsListPanel({
     </ActionBar>
   );
 
-  const isHealthy = (c: ConnectionRowConnection): boolean => {
-    const s = c.testStatus;
-    return c.isActive !== false && !c.prefixShadowed && (!s || s === "active" || s === "success");
-  };
+  // Render-stable "now" snapshot: Date.now() is impure during render
+  // (react-hooks/purity), so capture it once via a lazy state initializer. The
+  // filter counts refresh whenever the panel remounts.
+  const [filterClock] = React.useState(() => Date.now());
+  // The Cooldown Manager's `cooldownStatus` wins over the local test status: a
+  // 429 without a timer (e.g. Token Harbor) or a model lockout reads as
+  // non-healthy here too, so those accounts fall into the "Error" pill instead
+  // of being advertised as Active.
+  const isHealthy = (c: ConnectionRowConnection): boolean => isHealthyAccount(c, filterClock);
   const STATUS_FILTER_OPTIONS = [
     { value: "all", label: t("filterAll", "All") },
     { value: "active", label: t("filterActive", "Active") },

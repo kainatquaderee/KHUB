@@ -37,6 +37,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatResetCountdown } from "@/shared/utils/formatting";
 import type { ConnectionRowConnection } from "./ConnectionRow";
+import { isCoolingNow } from "./connectionHealth";
 // `providerText` is DEFINED in ./providerCredentialText (a leaf whose only
 // import is type-only) and merely re-exported by providerPageHelpers. Going
 // through that barrel pulls the whole provider-page graph — providerRegistry
@@ -50,12 +51,6 @@ export interface CoolingConnectionsPanelProps {
   readonly onClearCooldown?: (connectionId: string) => void;
   /** Connection id whose clear request is in flight — disables its button. */
   readonly clearingCooldownId?: string | null;
-}
-
-function isCoolingNow(connection: ConnectionRowConnection, now: number): boolean {
-  if (!connection.rateLimitedUntil) return false;
-  const until = new Date(connection.rateLimitedUntil).getTime();
-  return Number.isFinite(until) && until > now;
 }
 
 /** Visible last-error text (truncated) plus the full string for the tooltip. */

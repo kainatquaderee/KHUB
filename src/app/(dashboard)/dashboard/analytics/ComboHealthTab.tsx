@@ -283,7 +283,7 @@ function ComboAutopilotPanel({ report }: { report: ComboAutopilotReport }) {
               }
               size="sm"
             >
-              {report.status}
+              <span title={report.status}>{t(`comboHealthStatus.${report.status}`)}</span>
             </Badge>
           </div>
           <p className="mt-1 text-sm text-text-muted">{t("comboHealthAutopilotDescription")}</p>
@@ -326,11 +326,11 @@ function ComboAutopilotPanel({ report }: { report: ComboAutopilotReport }) {
                       {issue.title}
                     </div>
                     <div className="mt-1 text-xs text-text-muted">
-                      {combo.comboName} · score {combo.score}
+                      {t("comboHealthIssueCombo", { name: combo.comboName, score: combo.score })}
                     </div>
                   </div>
                   <Badge variant={getIssueVariant(issue.severity)} size="sm">
-                    {issue.severity}
+                    <span title={issue.severity}>{t(`comboHealthSeverity.${issue.severity}`)}</span>
                   </Badge>
                 </div>
                 <p className="mt-3 text-sm text-text-muted">{issue.recommendation}</p>

@@ -75,6 +75,66 @@ test("isProviderUsable: mixed — one usable connection makes the provider usabl
   assert.equal(isProviderUsable(conns, FIXED_NOW), true);
 });
 
+// ──────────────── unrecovered limit errors (untimed 429 / quota) ────────────────
+// Providers such as Token Harbor record a 429 "free allowance used" as
+// `error_code`/`last_error_type` without ever setting `rateLimitedUntil`. The
+// Cooldown Manager reads that via `hasUnrecoveredLimitError`; the ranking must
+// reach the same verdict instead of calling the account usable.
+
+test("isProviderUsable: untimed 429 (errorCode only) is not usable", () => {
+  const limited = conn("glm", { testStatus: "active", rateLimitedUntil: null, errorCode: 429 });
+  assert.equal(isProviderUsable([limited], FIXED_NOW), false);
+});
+
+test("isProviderUsable: limit-class lastErrorType alone is not usable", () => {
+  const limited = conn("glm", {
+    testStatus: "active",
+    rateLimitedUntil: null,
+    lastErrorType: "rate_limited",
+    errorCode: null,
+  });
+  assert.equal(isProviderUsable([limited], FIXED_NOW), false);
+});
+
+test("isProviderUsable: a recorded limit error survives an expired cooldown timer", () => {
+  const limited = conn("glm", {
+    testStatus: "active",
+    rateLimitedUntil: past(),
+    errorCode: 429,
+  });
+  assert.equal(isProviderUsable([limited], FIXED_NOW), false);
+});
+
+test("isProviderUsable: no error signal keeps the current classification", () => {
+  const clean = conn("glm", {
+    testStatus: "active",
+    rateLimitedUntil: null,
+    errorCode: null,
+    lastErrorType: null,
+  });
+  assert.equal(isProviderUsable([clean], FIXED_NOW), true);
+});
+
+test("isProviderUsable: a later success clears the limit error", () => {
+  // A successful test/health check resets BOTH persisted fields; the predicate
+  // then sees no unrecovered failure and the account is usable again.
+  const afterSuccess = conn("glm", {
+    testStatus: "active",
+    rateLimitedUntil: null,
+    errorCode: null,
+    lastErrorType: null,
+  });
+  assert.equal(isProviderUsable([afterSuccess], FIXED_NOW), true);
+});
+
+test("isProviderUsable: one healthy sibling still makes the provider usable", () => {
+  const conns = [
+    conn("glm", { testStatus: "active", rateLimitedUntil: null, errorCode: 429 }),
+    conn("glm", { testStatus: "active" }),
+  ];
+  assert.equal(isProviderUsable(conns, FIXED_NOW), true);
+});
+
 // ──────────────── filterFreeProviderRankings ────────────────
 
 const RANKINGS = [ranking("glm"), ranking("groq"), ranking("cerebras")];
@@ -156,6 +216,17 @@ test("filter: availableOnly implies configured (unconfigured provider excluded)"
   assert.equal(out.length, 0);
 });
 
+test("filter: availableOnly drops a provider limited only by an unrecovered 429", () => {
+  const connections = [
+    conn("glm", { testStatus: "active", rateLimitedUntil: null, errorCode: 429 }),
+  ];
+  const out = filterFreeProviderRankings(RANKINGS, connections, { availableOnly: true }, FIXED_NOW);
+  assert.deepEqual(
+    out.map((r) => r.id),
+    []
+  );
+});
+
 // ──────────────── attachProviderReliability ────────────────
 
 test("attachProviderReliability: healthy connections -> state healthy, signals exposed raw", () => {
@@ -171,8 +242,8 @@ test("attachProviderReliability: healthy connections -> state healthy, signals e
   assert.ok(alpha.reliability, "reliability must be attached to alpha");
   assert.equal(alpha.reliability.state, "healthy");
   assert.deepEqual(alpha.reliability.connections, [
-    { testStatus: "active", rateLimitedUntil: null, state: "healthy" },
-    { testStatus: "active", rateLimitedUntil: past(), state: "healthy" },
+    { testStatus: "active", rateLimitedUntil: null, lastErrorType: null, state: "healthy" },
+    { testStatus: "active", rateLimitedUntil: past(), lastErrorType: null, state: "healthy" },
   ]);
   assert.equal(out[1].reliability, undefined, "beta has no connection -> no reliability");
 });
@@ -206,6 +277,25 @@ test("attachProviderReliability: future rateLimitedUntil degrades; past one does
     FIXED_NOW
   );
   assert.equal(p[0].reliability?.state, "healthy");
+});
+
+test("attachProviderReliability: an untimed 429 degrades and exposes lastErrorType", () => {
+  const out = attachProviderReliability(
+    [ranking("alpha")],
+    [
+      conn("alpha", {
+        testStatus: "active",
+        rateLimitedUntil: null,
+        errorCode: 429,
+        lastErrorType: "rate_limited",
+      }),
+    ],
+    FIXED_NOW
+  );
+  assert.equal(out[0].reliability?.state, "degraded");
+  assert.equal(out[0].reliability?.connections[0].state, "degraded");
+  // Raw signal exposed verbatim so the UI can name the failure.
+  assert.equal(out[0].reliability?.connections[0].lastErrorType, "rate_limited");
 });
 
 test("attachProviderReliability: one down + one healthy connection -> provider degraded", () => {
@@ -287,7 +377,9 @@ function rankingWithReliability(id: string): FreeProviderRanking {
   return {
     ...ranking(id),
     reliability: {
-      connections: [{ testStatus: "active", rateLimitedUntil: null, state: "healthy" }],
+      connections: [
+        { testStatus: "active", rateLimitedUntil: null, lastErrorType: null, state: "healthy" },
+      ],
       state: "healthy",
     },
   };
@@ -401,25 +493,59 @@ test("sortBy=reliability with limit: reliability order runs before the slice", a
       topModel: { id: `${id}/m`, name: "M", score: elo },
       averageScore: elo,
       modelCount: 1,
-      reliability: rate === undefined ? undefined : { connections: [], state: "healthy", usage: { requests: 100, successes: rate === null ? 0 : Math.round(rate * 100), successRate: rate, avgLatencyMs: null, lastRequestAt: null, windowHours: 24 } },
+      reliability:
+        rate === undefined
+          ? undefined
+          : {
+              connections: [],
+              state: "healthy",
+              usage: {
+                requests: 100,
+                successes: rate === null ? 0 : Math.round(rate * 100),
+                successRate: rate,
+                avgLatencyMs: null,
+                lastRequestAt: null,
+                windowHours: 24,
+              },
+            },
     } as unknown as import("../../src/lib/freeProviderRankings.ts").FreeProviderRanking;
   }
   // 4 inputs: 2 types × 2 rates, ELO not aligned with rate — so raw order != reliability order.
   // filterRankingsByAuthType is a no-op for "" (empty) but keeps the shape explicit.
   const input = filterRankingsByAuthType(
-    [ranking("noauth-low", "noauth", 1000, 0.95), ranking("apikey-low", "apikey", 1200, 0.95), ranking("apikey-high", "apikey", 1500, 0.4), ranking("noauth-high", "noauth", 1400, 0.4)],
+    [
+      ranking("noauth-low", "noauth", 1000, 0.95),
+      ranking("apikey-low", "apikey", 1200, 0.95),
+      ranking("apikey-high", "apikey", 1500, 0.4),
+      ranking("noauth-high", "noauth", 1400, 0.4),
+    ],
     ""
   );
   // On the API, `limit` applies after ordering. Here we prove the same by slicing the ordered result.
   const ordered = sortRankingsByReliability(input);
   const sliced = ordered.slice(0, 2);
   // 0.95 providers first; equal rate falls back to ELO (1200 before 1000), not input order.
-  assert.deepEqual(sliced.map((r) => r.id), ["apikey-low", "noauth-low"], "top-2 by reliability, ELO on equal rate");
-  assert.equal(sliced.every((r) => r.reliability?.usage?.successRate !== null), true);
+  assert.deepEqual(
+    sliced.map((r) => r.id),
+    ["apikey-low", "noauth-low"],
+    "top-2 by reliability, ELO on equal rate"
+  );
+  assert.equal(
+    sliced.every((r) => r.reliability?.usage?.successRate !== null),
+    true
+  );
   // Combined-sort stability: reliability inside each auth-type group.
   const combined = sortRankingsAuthTypeFirst(ordered);
   const noauthRank = combined.filter((r) => r.category === "noauth").map((r) => r.id);
   const apikeyRank = combined.filter((r) => r.category === "apikey").map((r) => r.id);
-  assert.deepEqual(noauthRank, ["noauth-low", "noauth-high"], "within noauth, higher rate stays first");
-  assert.deepEqual(apikeyRank, ["apikey-low", "apikey-high"], "within apikey, higher rate stays first");
+  assert.deepEqual(
+    noauthRank,
+    ["noauth-low", "noauth-high"],
+    "within noauth, higher rate stays first"
+  );
+  assert.deepEqual(
+    apikeyRank,
+    ["apikey-low", "apikey-high"],
+    "within apikey, higher rate stays first"
+  );
 });

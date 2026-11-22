@@ -8,6 +8,8 @@
  */
 
 import { getRawProviderConnections } from "@/lib/db/providers";
+import { hasUnrecoveredLimitError } from "@/lib/resilience/limitErrorState";
+import type { CooldownStatusValue } from "@/lib/resilience/cooldownStatuses";
 import { clearAccountError } from "@/sse/services/auth";
 import {
   clearModelLock,
@@ -38,8 +40,7 @@ const COLUMNS = [
 const CONNECTION_LIMIT = 1000;
 const TERMINAL_STATUSES = new Set(["banned", "expired", "credits_exhausted"]);
 
-export type CooldownStatus =
-  "terminal" | "cooling_down" | "model_locked" | "unavailable" | "healthy";
+export type CooldownStatus = CooldownStatusValue;
 
 export interface CooldownLockout {
   model: string;
@@ -90,14 +91,25 @@ function remainingCooldownMs(rateLimitedUntil: string | null, now: number): numb
   return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
 }
 
+/** Model-lockout reasons that mean the account hit a limit, not a dead model. */
+const LIMIT_LOCKOUT_REASONS = new Set(["rate_limited", "quota_exhausted"]);
+
 function deriveStatus(
   testStatus: string | null,
   cooldownRemainingMs: number,
-  lockoutCount: number
+  lockouts: ModelLockoutInfo[],
+  hasLimitError: boolean
 ): CooldownStatus {
   if (testStatus && TERMINAL_STATUSES.has(testStatus)) return "terminal";
+  // A recorded 429/limit error, or a rate-limit/quota model lockout, is a
+  // rate-limited account. Providers like Token Harbor record the 429 *without*
+  // setting a connection cooldown, so ordering the timer checks first reported
+  // those accounts as healthy while they were refusing every request.
+  if (hasLimitError || lockouts.some((lockout) => LIMIT_LOCKOUT_REASONS.has(lockout.reason))) {
+    return "rate_limited";
+  }
   if (cooldownRemainingMs > 0) return "cooling_down";
-  if (lockoutCount > 0) return "model_locked";
+  if (lockouts.length > 0) return "model_locked";
   if (testStatus === "unavailable") return "unavailable";
   return "healthy";
 }
@@ -120,6 +132,10 @@ function toCooldownConnection(
   const testStatus = text(row.testStatus)?.trim().toLowerCase() ?? null;
   const rateLimitedUntil = text(row.rateLimitedUntil);
   const cooldownRemainingMs = remainingCooldownMs(rateLimitedUntil, now);
+  const limitError = hasUnrecoveredLimitError({
+    errorCode: text(row.errorCode),
+    lastErrorType: text(row.lastErrorType),
+  });
   return {
     id: String(row.id ?? ""),
     provider: String(row.provider ?? ""),
@@ -127,7 +143,7 @@ function toCooldownConnection(
     authType: String(row.authType ?? ""),
     priority: Number(row.priority ?? 0),
     isActive: Boolean(row.isActive),
-    status: deriveStatus(testStatus, cooldownRemainingMs, lockouts.length),
+    status: deriveStatus(testStatus, cooldownRemainingMs, lockouts, limitError),
     testStatus,
     rateLimitedUntil,
     cooldownRemainingMs,
@@ -158,6 +174,18 @@ export async function listConnectionCooldowns(provider?: string): Promise<Cooldo
   const lockouts = groupLockouts(getAllModelLockouts());
   const now = Date.now();
   return rows.map((row) => toCooldownConnection(row, lockouts.get(String(row.id)) ?? [], now));
+}
+
+/**
+ * Connection id → Cooldown Manager status.
+ *
+ * Other surfaces (the provider page's `healthy / total` count and its
+ * per-account status badge) read this instead of re-deriving health, so they can
+ * never disagree with the Cooldown Manager about a rate-limited account.
+ */
+export async function connectionCooldownStatusById(): Promise<Map<string, CooldownStatus>> {
+  const rows = await listConnectionCooldowns();
+  return new Map(rows.map((row) => [row.id, row.status]));
 }
 
 function hasTransientError(row: ConnectionRow): boolean {

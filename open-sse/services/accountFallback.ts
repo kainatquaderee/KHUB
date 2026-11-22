@@ -89,12 +89,24 @@ const RESETS_IN_RE = /resets? in (\d+h)?(\d+m)?(\d+s)?/i;
 const RETRY_IN_SEC_RE = /please retry in (\d+(?:\.\d+)?)\s*s/i;
 const COOLDOWN_NUMERIC_RE = /^\d+(\.\d+)?$/;
 
-export type RetryHintProvenance = "header" | "google_rpc_retry_info" | "body";
+export type RetryHintProvenance = "header" | "google_rpc_retry_info" | "body_absolute" | "body";
 
+/**
+ * True for resets the provider stated precisely enough that the app follows them
+ * exactly — past `maxCooldownMs` (see `recordModelLockoutFailure`) — because the
+ * upstream itself said when to come back: a transport header
+ * (`Retry-After`/`X-RateLimit-Reset`), `google.rpc.RetryInfo`, or an explicit
+ * calendar instant in the error body ("… comes back on 25 Nov 2026 at 06:05 UTC").
+ * Vague prose durations and generic JSON hints stay operator-capped.
+ */
 export function retryHintBypassesMaxCooldownMs(
   provenance: RetryHintProvenance | undefined
 ): boolean {
-  return provenance === "header" || provenance === "google_rpc_retry_info";
+  return (
+    provenance === "header" ||
+    provenance === "google_rpc_retry_info" ||
+    provenance === "body_absolute"
+  );
 }
 
 /**
@@ -113,6 +125,7 @@ export function isAuthoritativeRetryHintSource(
   return (
     provenance === "header" ||
     provenance === "google_rpc_retry_info" ||
+    provenance === "body_absolute" ||
     provenance === "body_structured"
   );
 }
@@ -127,6 +140,7 @@ import {
 import {
   parseDayGranularityResetMs,
   parseIsoDateTimeResetMs,
+  parseProseAbsoluteDateResetMs,
   shouldPreserveQuotaSignals,
 } from "./quotaResetParsing.ts";
 import { isTransientComboCooldownReason } from "./combo/comboCooldownRetry.ts";
@@ -872,11 +886,13 @@ export function recordModelLockoutFailure(
     scope?: "exact" | "quota_family";
     /**
      * #6863 vs #7940: set true only when `exactCooldownMs` came from an actual
-     * authoritative upstream signal: Retry-After/X-RateLimit-Reset headers or
-     * google.rpc.RetryInfo. Generic JSON and prose-derived reset text are useful
-     * exact hints but remain bounded by maxCooldownMs. Leave false/omitted for
-     * those body hints and for synthetic estimates (the quota_exhausted
-     * until-midnight default below, plain exponential backoff).
+     * authoritative upstream signal: Retry-After/X-RateLimit-Reset headers,
+     * google.rpc.RetryInfo, or an explicit calendar instant in the error body
+     * (`body_absolute`, e.g. "comes back on 25 Nov 2026 at 06:05 UTC"). Generic
+     * JSON and vague prose-derived text are useful exact hints but remain bounded
+     * by maxCooldownMs. Leave false/omitted for those body hints and for synthetic
+     * estimates (the quota_exhausted until-midnight default below, plain
+     * exponential backoff).
      */
     exactCooldownIsUpstreamReset?: boolean;
   } = {}
@@ -1910,26 +1926,49 @@ export function checkFallbackError(
     retryAfterMs: number;
     provenance: RetryHintProvenance;
   } | null {
+    const candidates: Array<{ retryAfterMs: number; provenance: RetryHintProvenance }> = [];
+
     const resetTime = parseResetFromHeaders(headers);
     if (resetTime) {
       const waitMs = Math.max(resetTime - Date.now(), 0);
-      if (waitMs > 0) return { retryAfterMs: waitMs, provenance: "header" };
+      if (waitMs > 0) candidates.push({ retryAfterMs: waitMs, provenance: "header" });
+    }
+
+    // A stated calendar instant ("… comes back on 25 Nov 2026 at 06:05 UTC") is a
+    // precise quota reset, so it outranks a generic throttling Retry-After: Token
+    // Harbor sends `Retry-After: 3600` alongside a free-allowance reset days away,
+    // and honoring only the header parked the model for an hour and re-probed into
+    // the same wall every hour. Tagged `body_absolute` so it is honored exactly
+    // rather than clamped to maxCooldownMs.
+    const absoluteResetMs = parseProseAbsoluteDateResetMs(
+      errorStr,
+      MAX_PROVIDER_COOLDOWN_MS,
+      Date.now(),
+      provider
+    );
+    if (absoluteResetMs && absoluteResetMs > 0) {
+      candidates.push({ retryAfterMs: absoluteResetMs, provenance: "body_absolute" });
     }
 
     const detailedJsonHint = parseDetailedRetryHintFromJsonBody(errorStr, MAX_PROVIDER_COOLDOWN_MS);
     if (detailedJsonHint) {
-      return {
+      candidates.push({
         retryAfterMs: detailedJsonHint.retryAfterMs,
         provenance: detailedJsonHint.provenance,
-      };
+      });
     }
 
     const retryFromErrorText = parseRetryFromErrorText(errorStr, provider);
     if (retryFromErrorText && retryFromErrorText > 0) {
-      return { retryAfterMs: retryFromErrorText, provenance: "body" };
+      candidates.push({ retryAfterMs: retryFromErrorText, provenance: "body" });
     }
 
-    return null;
+    if (candidates.length === 0) return null;
+    // Longest wait wins: every candidate is provider-sent, and the more specific
+    // one (a stated reset instant) is the one that actually reflects the wall.
+    return candidates.reduce((longest, candidate) =>
+      candidate.retryAfterMs > longest.retryAfterMs ? candidate : longest
+    );
   }
 
   function getUpstreamRetryHint() {

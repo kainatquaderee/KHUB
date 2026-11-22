@@ -60,6 +60,14 @@ import ProviderModelsSection from "./components/ProviderModelsSection";
 import CustomModelsSection from "./components/CustomModelsSection";
 import ConnectionsListPanel from "./components/ConnectionsListPanel";
 import CoolingConnectionsPanel from "./components/CoolingConnectionsPanel";
+import { countHealthyAccounts } from "./components/connectionHealth";
+import ProviderAttentionBanner from "./components/ProviderAttentionBanner";
+import {
+  attentionInputsFromConnectionFlags,
+  isProviderAttentionNeeded,
+} from "@/lib/providers/attentionThreshold";
+import { useProviderAttention } from "../hooks/useProviderAttention";
+import { useProviderAttentionThreshold } from "../hooks/useProviderAttentionThreshold";
 import ConnectionsHeaderToolbar from "./components/ConnectionsHeaderToolbar";
 import { ConnectionPinTip } from "./components/ConnectionIdChip";
 import VolcengineConnectModal from "./components/VolcengineConnectModal";
@@ -309,6 +317,27 @@ export default function ProviderDetailPageClient() {
   const devinAgenticAuthenticated = useDevinAgenticAuthStatus(providerId === "devin-cli-agentic");
   const displayConnectionCount =
     connections.length + (devinAgenticAuthenticated && connections.length === 0 ? 1 : 0);
+  // Per-provider "attention needed": the healthy count comes from the Cooldown
+  // Manager's verdict (same predicate as the routing card), and the threshold is
+  // the operator's configured value. Small providers never alarm.
+  const attentionThreshold = useProviderAttentionThreshold();
+  const attentionHealthy = countHealthyAccounts(connections).healthy;
+  const attentionNeeded = isProviderAttentionNeeded(
+    attentionInputsFromConnectionFlags(connections, attentionHealthy),
+    attentionThreshold
+  );
+  useProviderAttention(
+    [
+      {
+        id: providerId,
+        name: providerInfo?.name ?? providerId,
+        healthy: attentionHealthy,
+        total: connections.length,
+        attentionNeeded,
+      },
+    ],
+    attentionThreshold
+  );
   const isFreeNoAuth =
     NOAUTH_PROVIDERS[providerId]?.noAuth === true ||
     getProviderById(providerId)?.managedAccount === true;
@@ -592,6 +621,14 @@ export default function ProviderDetailPageClient() {
         onOpenTutorial={() => setShowTutorialModal(true)}
         t={t}
         isReferralLink={isReferralLink}
+        attentionNeeded={attentionNeeded}
+      />
+
+      <ProviderAttentionBanner
+        attentionNeeded={attentionNeeded}
+        healthy={attentionHealthy}
+        total={connections.length}
+        threshold={attentionThreshold}
       />
 
       <ProviderTosNotice providerId={providerId} />
@@ -640,6 +677,7 @@ export default function ProviderDetailPageClient() {
           <ProviderAccountRoutingCard
             providerKey={providerId}
             connectionCount={connections.length}
+            healthyCount={attentionHealthy}
           />
           <ConnectionsHeaderToolbar
             providerId={providerId}

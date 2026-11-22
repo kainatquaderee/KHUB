@@ -10,6 +10,7 @@ import type { CooldownConnection, CooldownStatus } from "@/lib/resilience/cooldo
 
 const STATUS_VARIANT: Record<CooldownStatus, "warning" | "error" | "info" | "success"> = {
   cooling_down: "warning",
+  rate_limited: "warning",
   model_locked: "warning",
   unavailable: "info",
   terminal: "error",

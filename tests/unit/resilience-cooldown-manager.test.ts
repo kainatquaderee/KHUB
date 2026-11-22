@@ -20,6 +20,7 @@ const core = await import("../../src/lib/db/core.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
 const accountFallback = await import("../../open-sse/services/accountFallback.ts");
 const manager = await import("../../src/lib/resilience/cooldownManager.ts");
+const cooldownStatuses = await import("../../src/lib/resilience/cooldownStatuses.ts");
 const route = await import("../../src/app/api/resilience/cooldowns/route.ts");
 
 const IN_TEN_MINUTES = () => new Date(Date.now() + 10 * 60_000).toISOString();
@@ -90,11 +91,63 @@ test("lists every connection with its cooldown, lockout and terminal state", asy
   assert.equal(byId.get(cooling.id)?.status, "cooling_down");
   assert.ok((byId.get(cooling.id)?.cooldownRemainingMs ?? 0) > 0);
   assert.equal(byId.get(cooling.id)?.backoffLevel, 2);
-  assert.equal(byId.get(locked.id)?.status, "model_locked");
+  // A 429-caused lockout reports as "rate limited": the account hit its limit,
+  // which is the state operators act on (the lockouts column keeps the model).
+  assert.equal(byId.get(locked.id)?.status, "rate_limited");
   // Codex locks per quota scope, so the listed "model" is the scope name.
   assert.equal(byId.get(locked.id)?.lockouts.length, 1);
   assert.ok((byId.get(locked.id)?.lockouts[0]?.remainingMs ?? 0) > 0);
   assert.equal(byId.get(banned.id)?.status, "terminal");
+});
+
+test("a recorded 429 reads as rate limited, with or without a live timer", async () => {
+  await resetStorage();
+
+  // Providers such as Token Harbor answer a 429 and park only the *model*, so the
+  // connection keeps `rate_limited_until` empty while it refuses every request.
+  // That used to derive "healthy" and the account silently stayed listed as fine.
+  const hammered = await seed("tokenharbor", { name: "hammered" });
+  await providersDb.updateProviderConnection(hammered.id, {
+    errorCode: 429,
+    lastError: "Model deepseek-v4.1-flash:free rate_limited",
+    lastErrorType: "rate_limited",
+  });
+
+  const afterError = await manager.listConnectionCooldowns("tokenharbor");
+  const errorRow = afterError.find((connection) => connection.id === hammered.id);
+  assert.equal(errorRow?.status, "rate_limited");
+  assert.equal(errorRow?.cooldownRemainingMs, 0, "no connection cooldown was set");
+
+  // The model lockout that came with the 429 keeps the same state and carries the
+  // countdown the manager renders as "Time left".
+  accountFallback.lockModel(
+    "tokenharbor",
+    hammered.id,
+    "deepseek-v4.1-flash:free",
+    "rate_limited",
+    600_000
+  );
+  const afterLock = await manager.listConnectionCooldowns("tokenharbor");
+  const lockedRow = afterLock.find((connection) => connection.id === hammered.id);
+  assert.equal(lockedRow?.status, "rate_limited");
+  assert.ok((lockedRow?.lockouts[0]?.remainingMs ?? 0) > 0);
+});
+
+test("every status the manager emits is one the UI knows how to render", async () => {
+  await resetStorage();
+  await seedPool();
+
+  const rows = await manager.listConnectionCooldowns();
+  const statuses = new Set(rows.map((row) => row.status));
+  assert.deepEqual(
+    [...statuses].filter((status) => !cooldownStatuses.isCooldownStatus(status)),
+    [],
+    "an unknown status makes ProviderLimits/useAvailability discard the whole summary"
+  );
+  // The states operators act on in this list.
+  assert.ok(statuses.has("cooling_down"));
+  assert.ok(statuses.has("rate_limited"));
+  assert.ok(statuses.has("terminal"));
 });
 
 test("the GET response never carries credentials", async () => {

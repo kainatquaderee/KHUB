@@ -19,6 +19,8 @@ export type ProviderQuotaEndpoints = Record<string, ProviderQuotaEndpointEntry>;
 export interface UsageLinkTestResult {
   ok?: boolean;
   status?: number;
+  /** Whether the probe could attach one of the provider's own credentials. */
+  authenticated?: boolean;
   blocked?: boolean;
   contentType?: string | null;
   preview?: string;
@@ -174,7 +176,7 @@ export default function ProviderUsageLinkCard({ providerId }: ProviderUsageLinkC
       const response = await fetch("/api/resilience/usage-link/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urlValue }),
+        body: JSON.stringify({ url: urlValue, providerId }),
       });
       const data = (await response.json().catch(() => ({}))) as UsageLinkTestResult;
       setTestResult(data);
@@ -183,7 +185,7 @@ export default function ProviderUsageLinkCard({ providerId }: ProviderUsageLinkC
     } finally {
       setTesting(false);
     }
-  }, [t, urlValue]);
+  }, [providerId, t, urlValue]);
 
   const onToggle = useCallback(
     (next: boolean) => {
@@ -259,7 +261,21 @@ export default function ProviderUsageLinkCard({ providerId }: ProviderUsageLinkC
             : testResult.blocked
               ? (testResult.error ??
                 providerText(t, "usageLinkTestBlocked", "Blocked by outbound URL policy"))
-              : (testResult.error ?? providerText(t, "usageLinkTestFailed", "Link unreachable"))}
+              : testResult.status
+                ? `HTTP ${testResult.status} — ${
+                    testResult.authenticated === false
+                      ? providerText(
+                          t,
+                          "usageLinkTestNoCredential",
+                          "no provider credential was available to send"
+                        )
+                      : providerText(
+                          t,
+                          "usageLinkTestRejected",
+                          "the endpoint rejected the request"
+                        )
+                  }`
+                : (testResult.error ?? providerText(t, "usageLinkTestFailed", "Link unreachable"))}
         </p>
       ) : null}
       {enabled && testResult?.ok && testResult.preview ? (

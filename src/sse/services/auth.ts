@@ -2955,9 +2955,11 @@ export async function markAccountUnavailable(
           exactCooldownMs,
           maxCooldownMs: mlSettings.maxCooldownMs,
           scope: usesExactAntigravityLock ? "exact" : undefined,
-          // Only a transport header, google.rpc.RetryInfo, or cached Claude reset can bypass
-          // maxCooldownMs. Prose and generic JSON hints remain exact but operator-capped, and
-          // so does the avalanche burst cooldown when it outlasts the upstream reset.
+          // Only a provider-stated reset can bypass maxCooldownMs: a transport header,
+          // google.rpc.RetryInfo, an explicit calendar instant in the body, or a cached
+          // Claude reset. Vague prose and generic JSON hints remain exact but
+          // operator-capped, and so does the avalanche burst cooldown when it outlasts the
+          // upstream reset.
           exactCooldownIsUpstreamReset:
             exactCooldownMs === upstreamCooldownMs &&
             (retryHintBypassesMaxCooldownMs(fallbackResult.retryHintSource) ||

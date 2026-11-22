@@ -187,9 +187,10 @@ function deriveTargetFailure(
     opts.fallbackResult.usedUpstreamRetryHint === true
       ? fallbackCooldownMs
       : (opts.fallbackResult.quotaResetHintMs ?? 0);
-  // Only a transport header or google.rpc.RetryInfo is authoritative enough
-  // to bypass maxCooldownMs. Prose and generic JSON remain useful exact hints,
-  // but the operator cap still bounds them.
+  // Only a provider-stated reset is authoritative enough to bypass maxCooldownMs:
+  // a transport header, google.rpc.RetryInfo, or an explicit calendar instant in
+  // the body. Vague prose and generic JSON remain useful exact hints, but the
+  // operator cap still bounds them.
   const fallbackLockoutHintVerified = retryHintBypassesMaxCooldownMs(
     opts.fallbackResult.retryHintSource
   );

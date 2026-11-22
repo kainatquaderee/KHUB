@@ -6,7 +6,10 @@ import Badge from "@/shared/components/Badge";
 import DataTable from "@/shared/components/DataTable";
 import type { DataTableColumn, DataTableRow } from "@/shared/components/DataTable";
 import type { ConnectionState } from "@/types/resilience";
-import { describeProviderAvailability } from "@/lib/providerAvailability";
+import {
+  describeProviderAvailability,
+  type ProviderAvailability,
+} from "@/lib/providerAvailability";
 import { formatRemaining } from "@/shared/utils/formatRemaining";
 import ConnectionDetail from "./ConnectionDetail";
 
@@ -14,6 +17,61 @@ interface ConnectionsTableProps {
   connections: ConnectionState[];
   receivedAt: number; // client fetch receive time (immune to clock skew)
   degraded: string[]; // meta.degraded from API (to show "Unknown" when breaker data absent)
+}
+
+/** Translated labels for the API's coarse `errorCode` category (never a raw upstream code). */
+const ERROR_CODE_LABELS: Record<string, string> = {
+  rate_limit: "table.errorRateLimit",
+  auth: "table.errorAuth",
+  server: "table.errorServer",
+  not_found: "table.errorNotFound",
+  other: "table.errorOther",
+};
+
+type TableTranslator = {
+  (key: string, values?: Record<string, string>): string;
+  has: (key: string) => boolean;
+};
+
+/**
+ * Localized one-line label for a `ProviderAvailability`. Keys live in the
+ * `resilienceConnections.availability.*` block; when a catalog has not
+ * translated the key yet we fall back to `describeProviderAvailability` (the
+ * canonical English form, also used by the API).
+ */
+function availabilityLabel(t: TableTranslator, a: ProviderAvailability): string {
+  let key: string | null = null;
+  let values: Record<string, string> | undefined;
+  switch (a.state) {
+    case "AVAILABLE":
+      key = "availability.available";
+      break;
+    case "NO_CREDENTIAL":
+      key = "availability.noCredential";
+      break;
+    case "AUTH_EXPIRED":
+      key = "availability.authExpired";
+      break;
+    case "QUOTA_EXHAUSTED":
+      if (a.nextEligibleRecheckAt) {
+        key = "availability.quotaExhaustedRecheck";
+        values = { at: a.nextEligibleRecheckAt };
+      } else {
+        key = "availability.quotaExhausted";
+      }
+      break;
+    case "DISABLED":
+      key = "availability.disabled";
+      break;
+    case "STALE_TERMINAL":
+      key = "availability.staleTerminal";
+      values = { previousState: a.previousState };
+      break;
+    case "UNHEALTHY":
+      key = a.retryable ? "availability.unhealthyRetryable" : "availability.unhealthy";
+      break;
+  }
+  return key && t.has(key) ? t(key, values) : describeProviderAvailability(a);
 }
 
 // Module-scoped memoized countdown cell: hoisted to avoid remount on every poll
@@ -27,11 +85,12 @@ function StatusWithAvailability({
   badge: ReactNode;
   connection: ConnectionState;
 }) {
+  const t = useTranslations("resilienceConnections");
   return (
     <div className="flex flex-col gap-1">
       {badge}
       <span className="text-xs text-text-muted">
-        {describeProviderAvailability(connection.availability)}
+        {availabilityLabel(t, connection.availability)}
       </span>
     </div>
   );
@@ -94,6 +153,13 @@ export default function ConnectionsTable({
             case "status": {
               let badge: ReactNode;
               switch (r.connectionStatus) {
+                case "rate_limited":
+                  badge = (
+                    <Badge variant="error" size="sm">
+                      {t("table.rateLimited")}
+                    </Badge>
+                  );
+                  break;
                 case "cooling_down":
                   badge = (
                     <Badge variant="warning" size="sm">
@@ -144,9 +210,11 @@ export default function ConnectionsTable({
                   }
                   break;
                 default:
+                  // A status this build does not know yet must still read as a
+                  // translated label, never as a raw machine string.
                   badge = (
                     <Badge variant="info" size="sm">
-                      {r.connectionStatus}
+                      {t("table.unknown")}
                     </Badge>
                   );
               }
@@ -158,7 +226,18 @@ export default function ConnectionsTable({
               // memoized: isolates the 1s tick to a single cell
               return <CountdownCell connection={r} receivedAt={receivedAt} />;
             case "lastError":
-              return <span>{r.lastErrorType ?? t("table.never")}</span>;
+              // `errorCode` is already a coarse category (rate_limit/auth/...), never
+              // the raw upstream code; `lastErrorType` is a machine string, so it is
+              // never rendered as-is.
+              return (
+                <span>
+                  {r.errorCode
+                    ? t(ERROR_CODE_LABELS[r.errorCode] ?? "table.errorOther")
+                    : r.lastErrorType
+                      ? t("table.unknown")
+                      : t("table.never")}
+                </span>
+              );
             case "lockouts":
               return <span>{r.lockouts.length}</span>;
             case "provider":

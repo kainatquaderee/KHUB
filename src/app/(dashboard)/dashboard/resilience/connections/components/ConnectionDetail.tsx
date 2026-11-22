@@ -25,12 +25,43 @@ function DetailRow({ label, children }: { label: React.ReactNode; children: Reac
 }
 
 /** "<ISO time> · <from> (<reason>)" for the breaker's last close, like lastErrorAt's ISO time. */
-function formatLastClose(breaker: ConnectionState["breaker"], never: string): string | null {
+function formatLastClose(
+  breaker: ConnectionState["breaker"],
+  never: string,
+  t: DetailTranslator
+): string | null {
   if (!breaker) return null;
   const lastClose = breaker.lastClose ?? null;
   if (!lastClose) return never;
   const at = Number.isFinite(lastClose.at) ? new Date(lastClose.at).toISOString() : never;
-  return `${at} · ${lastClose.from} (${lastClose.reason ?? never})`;
+  return `${at} · ${breakerStateLabel(t, lastClose.from)} (${lastClose.reason ?? never})`;
+}
+
+type DetailTranslator = {
+  (key: string): string;
+  has: (key: string) => boolean;
+};
+
+/**
+ * The breaker exposes raw `CircuitState` tokens (`CLOSED`/`DEGRADED`/`OPEN`/
+ * `HALF_OPEN`); `resilienceConnections.timeline.state.*` already owns their
+ * labels. Fall back to the raw token when a catalog lacks the key.
+ */
+function breakerStateLabel(t: DetailTranslator, state: string): string {
+  const path = `timeline.state.${state.toLowerCase()}`;
+  return t.has(path) ? t(path) : state;
+}
+
+/** Coarse failure kinds recorded by the breaker (see `classify429`). */
+const FAILURE_KIND_KEYS: Record<string, string> = {
+  rate_limit: "failureKind.rateLimit",
+  quota_exhausted: "failureKind.quotaExhausted",
+  transient: "failureKind.transient",
+};
+
+function failureKindLabel(t: DetailTranslator, kind: string): string {
+  const key = FAILURE_KIND_KEYS[kind];
+  return key && t.has(key) ? t(key) : kind;
 }
 
 export default function ConnectionDetail({
@@ -104,7 +135,9 @@ export default function ConnectionDetail({
         <div className="flex flex-col gap-2">
           <div>
             <Badge variant={breakerVariant(connection.breaker.state)} size="sm">
-              {connection.breaker.state}
+              <span title={connection.breaker.state}>
+                {breakerStateLabel(t, connection.breaker.state)}
+              </span>
             </Badge>
           </div>
           <dl className="flex flex-col gap-1">
@@ -115,10 +148,16 @@ export default function ConnectionDetail({
               {connection.breaker.retryAfterMs}
             </DetailRow>
             <DetailRow label={t("detail.lastFailureKind")}>
-              {connection.breaker.lastFailureKind ?? t("detail.never")}
+              {connection.breaker.lastFailureKind ? (
+                <span title={connection.breaker.lastFailureKind}>
+                  {failureKindLabel(t, connection.breaker.lastFailureKind)}
+                </span>
+              ) : (
+                t("detail.never")
+              )}
             </DetailRow>
             <DetailRow label={t("detail.lastClose")}>
-              {formatLastClose(connection.breaker, t("detail.never"))}
+              {formatLastClose(connection.breaker, t("detail.never"), t)}
             </DetailRow>
           </dl>
         </div>

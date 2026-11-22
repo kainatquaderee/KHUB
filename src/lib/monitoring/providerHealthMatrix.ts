@@ -7,6 +7,10 @@ import { getAllCircuitBreakerStatuses } from "@/shared/utils/circuitBreaker";
 import { getAllModelLockouts } from "@omniroute/open-sse/services/accountFallback";
 import { resolveProviderAlias } from "@omniroute/open-sse/services/model";
 import { getWebSessionPoolHealth } from "@omniroute/open-sse/services/webSessionPoolHealth";
+import {
+  connectionCooldownStatusById,
+  type CooldownStatus,
+} from "@/lib/resilience/cooldownManager";
 import { createHealthSnapshotCache } from "./healthSnapshotCache";
 
 type JsonRecord = Record<string, unknown>;
@@ -44,6 +48,8 @@ export interface ProviderHealthMatrixAccount {
   isSynthetic: boolean;
   isActive: boolean;
   state: ProviderHealthState;
+  /** The Cooldown Manager's verdict; `null` when the read failed or the account is unknown. */
+  cooldownStatus: CooldownStatus | null;
   testStatus: string | null;
   rateLimitedUntil: string | null;
   cooldownRemainingMs: number;
@@ -329,12 +335,21 @@ function classifyModel(
 function classifyAccount(
   connection: JsonRecord | null,
   models: ProviderHealthMatrixModel[],
-  now: number
+  now: number,
+  cooldownStatus: CooldownStatus | null
 ): ProviderHealthState {
   if (connection) {
     if (!isActiveConnection(connection.isActive) || isTerminalConnection(connection)) return "down";
-    const cooldownUntil = parseTimeMs(connection.rateLimitedUntil);
-    if (cooldownUntil && cooldownUntil > now) return "degraded";
+    // Prefer the Cooldown Manager's verdict: it recognises recorded limit errors
+    // (429 / quota) that never set a `rateLimitedUntil` timer. Only fall back to
+    // the raw timer when the manager has no verdict for this account.
+    if (cooldownStatus) {
+      if (cooldownStatus === "terminal") return "down";
+      if (cooldownStatus !== "healthy") return "degraded";
+    } else {
+      const cooldownUntil = parseTimeMs(connection.rateLimitedUntil);
+      if (cooldownUntil && cooldownUntil > now) return "degraded";
+    }
   }
   if (models.some((model) => model.status === "error" || model.status === "locked")) {
     return "degraded";
@@ -372,6 +387,17 @@ export async function buildProviderHealthMatrix(
     getAllModelLockouts(),
     statsCache.get(range, () => ({ rows: queryCallLogTargetStats(cutoff, null), cutoff })),
   ]);
+
+  // The Cooldown Manager is the only place that knows a 429 was recorded without
+  // a `rateLimitedUntil` timer (Token Harbor's "free allowance used"), so read its
+  // verdict once per build. Fail soft: without it the classify path still falls
+  // back to the raw timer below, which is the previous behaviour.
+  let cooldownStatusById = new Map<string, CooldownStatus>();
+  try {
+    cooldownStatusById = await connectionCooldownStatusById();
+  } catch (error) {
+    console.error("Failed to read connection cooldown statuses for the health matrix:", error);
+  }
 
   const connectionRows = (connections as unknown as JsonRecord[]).filter((connection) => {
     const provider = canonicalProviderId(connection.provider);
@@ -527,7 +553,10 @@ export async function buildProviderHealthMatrix(
 
       const cooldownUntil = connection ? parseTimeMs(connection.rateLimitedUntil) : null;
       const cooldownRemainingMs = cooldownUntil ? Math.max(0, cooldownUntil - now) : 0;
-      const state = classifyAccount(connection, models, now);
+      const cooldownStatus = connectionId
+        ? (cooldownStatusById.get(String(connectionId)) ?? null)
+        : null;
+      const state = classifyAccount(connection, models, now, cooldownStatus);
       const issueCount =
         (state === "healthy" ? 0 : 1) +
         models.filter((model) => model.status === "error" || model.status === "locked").length;
@@ -539,6 +568,7 @@ export async function buildProviderHealthMatrix(
         isSynthetic: !connection,
         isActive: connection ? isActiveConnection(connection.isActive) : true,
         state,
+        cooldownStatus,
         testStatus: connection ? toString(connection.testStatus) : null,
         rateLimitedUntil: connection ? toString(connection.rateLimitedUntil) : null,
         cooldownRemainingMs,

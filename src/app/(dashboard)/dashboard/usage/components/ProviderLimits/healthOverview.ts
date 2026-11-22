@@ -1,4 +1,5 @@
 import { resolveProviderAvailability, type ProviderAvailability } from "@/lib/providerAvailability";
+import { hasUnrecoveredLimitError } from "@/lib/resilience/limitErrorState";
 import { parseRuntimeTimestamp, runtimeCooldownEvidence } from "./runtimeCooldown";
 import type { CodexPaidCredits } from "@/lib/providers/codexPaidCredits";
 import { quotaPercentage, type QuotaBypass } from "./quotaEligibility";
@@ -59,6 +60,10 @@ export interface HealthConnection {
   rateLimitedUntil?: string | number | null;
   lastErrorAt?: string | number | null;
   lastErrorType?: string | null;
+  /** Coarse error category recorded by the SSE layer (e.g. 429 for a limit error). */
+  errorCode?: string | number | null;
+  /** The Cooldown Manager's verdict, attached by /api/providers and /api/providers/client. */
+  cooldownStatus?: string | null;
   updatedAt?: string;
   runtimeObservedAt?: string;
 }
@@ -71,6 +76,8 @@ export interface HealthCooldown {
   lastErrorAt?: string | number | null;
   cooldownRemainingMs?: number;
   lastErrorType?: string | null;
+  /** Coarse error category recorded by the SSE layer (e.g. 429 for a limit error). */
+  errorCode?: string | number | null;
   lockouts: Array<{ model: string; remainingMs: number; reason: string }>;
 }
 export interface AvailabilityEvidence {
@@ -99,6 +106,7 @@ export interface HealthReason {
     | "cutoffNotEvaluated"
     | "lockout"
     | "previousFailure"
+    | "rateLimited"
     | "awaitingSync"
     | "verdictUnavailable"
     | "previousSnapshot"
@@ -336,6 +344,7 @@ function resolveRuntimeDecision(
   runtime: ReturnType<typeof runtimeCooldownEvidence>["runtime"],
   evidence: AvailabilityEvidence,
   testStatus: string | undefined,
+  cooldownStatus: string | null,
   now: number,
   reasons: HealthReason[],
   reportedUntil: number
@@ -375,8 +384,22 @@ function resolveRuntimeDecision(
           durationMs: Math.max(1, until - startedAt),
         }
       : null;
-  if (testStatus === "unavailable" && !cooldown) reasons.push({ type: "previousFailure" });
-  return { runtimeAvailability, terminal, cooldown };
+  // A 429/limit failure, or the Cooldown Manager reporting `rate_limited` /
+  // `model_locked`, makes the account unusable even when no cooldown timer was
+  // recorded (Token Harbor's "free allowance used" 429). When a timer exists the
+  // `cooldown` reason already carries it, so this only covers the untimed case.
+  const limitBlocked =
+    cooldownStatus === "rate_limited" ||
+    cooldownStatus === "model_locked" ||
+    hasUnrecoveredLimitError({
+      errorCode: runtime.errorCode,
+      lastErrorType: runtime.lastErrorType,
+    });
+  const rateLimited: HealthReason | null =
+    limitBlocked && !terminal && !cooldown ? { type: "rateLimited" } : null;
+  if (testStatus === "unavailable" && !cooldown && !rateLimited)
+    reasons.push({ type: "previousFailure" });
+  return { runtimeAvailability, terminal, cooldown, rateLimited };
 }
 function runtimeLocks(
   lockouts: HealthCooldown["lockouts"],
@@ -409,6 +432,7 @@ function resolveRuntimeFacts(
     summaryTime,
     lockouts,
     until: reportedUntil,
+    cooldownStatus,
     isActive,
   } = runtimeCooldownEvidence(connection, evidence, now);
   const runtime = { ...selectedRuntime, isActive };
@@ -423,6 +447,7 @@ function resolveRuntimeFacts(
     runtime,
     evidence,
     testStatus,
+    cooldownStatus,
     now,
     reasons,
     reportedUntil
@@ -436,6 +461,7 @@ function resolveRuntimeFacts(
     runtimeAvailability: decision.runtimeAvailability,
     terminal: decision.terminal,
     cooldown: decision.cooldown,
+    rateLimited: decision.rateLimited,
     locks,
   };
 }
@@ -454,6 +480,7 @@ function resolveHealthStatus(
   if (
     runtime.terminal ||
     runtime.cooldown ||
+    runtime.rateLimited ||
     availability?.account.usable === false ||
     allGroupsBlocked
   )
@@ -499,6 +526,7 @@ function prependRuntimeReasons(
 ) {
   if (status === "paused") reasons.unshift({ type: "paused" });
   if (runtime.cooldown) reasons.unshift(runtime.cooldown);
+  if (runtime.rateLimited) reasons.unshift(runtime.rateLimited);
   if (runtime.terminal) reasons.unshift(runtime.terminal);
   reasons.push(...blocked, ...runtime.locks);
 }
@@ -510,6 +538,7 @@ function healthConstraints(
     ...blocked,
     ...runtime.locks,
     ...(runtime.cooldown ? [runtime.cooldown] : []),
+    ...(runtime.rateLimited ? [runtime.rateLimited] : []),
     ...(runtime.terminal ? [runtime.terminal] : []),
   ];
 }

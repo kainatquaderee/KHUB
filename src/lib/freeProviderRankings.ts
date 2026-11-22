@@ -16,6 +16,7 @@ import { getProviderConnections } from "./db/providers";
 import { getProviderUsageSince, type ProviderUsageRow } from "./db/callLogStats";
 import { familyCanonicalOf } from "./providerFamilyAgg";
 import { getCustomModels } from "./db/models";
+import { hasUnrecoveredLimitError } from "@/lib/resilience/limitErrorState";
 // Type-only: reuse the health vocabulary instead of forking it.
 import { RANGE_MS } from "./monitoring/providerHealthMatrix";
 import type {
@@ -233,12 +234,20 @@ export function findMatchingIntelligence(
 /**
  * Minimal shape of a provider connection needed to decide "configured" /
  * "non-exhausted". Matches the camelCase columns returned by
- * `getProviderConnections()` (`provider`, `testStatus`, `rateLimitedUntil`).
+ * `getProviderConnections()` (`provider`, `testStatus`, `rateLimitedUntil`,
+ * `lastErrorType`, `errorCode`).
+ *
+ * `lastErrorType`/`errorCode` carry the same limit-failure signal the Cooldown
+ * Manager reads: providers such as Token Harbor answer a 429 "free allowance
+ * used" and persist the error without ever setting a `rateLimitedUntil` timer, so
+ * a timer-only rule would keep reporting those accounts usable.
  */
 export interface ConnectionState {
   provider: string;
   testStatus?: string | null;
   rateLimitedUntil?: string | null;
+  lastErrorType?: string | null;
+  errorCode?: string | number | null;
 }
 
 /**
@@ -247,16 +256,20 @@ export interface ConnectionState {
  * builder already holds — zero extra query.
  *
  * States use `ProviderHealthState` (`src/lib/monitoring/providerHealthMatrix.ts`)
- * so both surfaces describe a provider the same way. The raw signals stay
- * verbatim next to the state: `testStatus` is written on failure paths only and
- * reset to `active` by an explicit connection test or a re-auth, so it can
- * outlive the actual recovery.
+ * so both surfaces describe a provider the same way. A connection is `degraded`
+ * while either its `rateLimitedUntil` timer is live or its last recorded failure
+ * is an unrecovered rate-limit/quota error (`hasUnrecoveredLimitError` — a 429
+ * such as Token Harbor's that never set a timer). The raw signals stay verbatim
+ * next to the state: `testStatus` is written on failure paths only and reset to
+ * `active` by an explicit connection test or a re-auth, so it can outlive the
+ * actual recovery; `lastErrorType` is echoed so the UI can name the failure.
  */
 export interface ProviderReliability {
-  /** Same triplet `ProviderHealthMatrixAccount` exposes, one per connection. */
+  /** One entry per connection, sharing the health-matrix account shape. */
   connections: Array<{
     testStatus: string | null;
     rateLimitedUntil: string | null;
+    lastErrorType: string | null;
     state: ProviderHealthState;
   }>;
   /** Provider aggregate; absent entirely for providers with no loaded connection. */
@@ -376,9 +389,11 @@ const TERMINAL_CONNECTION_STATUSES = new Set(["credits_exhausted", "banned", "ex
  * Pure predicate: is at least one of a provider's connections usable *right now*?
  *
  * A connection is usable when it is neither terminal (`testStatus` ∉
- * {credits_exhausted, banned, expired}) nor currently rate-limited
- * (`rateLimitedUntil` null or in the past — lazy recovery, matching the
- * Connection Cooldown rule in CLAUDE.md).
+ * {credits_exhausted, banned, expired}) nor currently limited: its
+ * `rateLimitedUntil` timer is null/in the past AND it carries no unrecovered
+ * rate-limit/quota error (`hasUnrecoveredLimitError`). The latter recognises
+ * providers that record a 429 or quota failure without setting a cooldown timer,
+ * matching the Cooldown Manager and the health matrix.
  *
  * NOTE: granularity is PROVIDER-level (connection = provider+account). Per-model
  * quota lockout (model lockout, `open-sse/services/accountFallback.ts`) is a
@@ -393,8 +408,9 @@ export function isProviderUsable(
 
 /**
  * One connection, classified as `classifyAccount` does (health matrix): terminal
- * status ⇒ `down`, live cooldown ⇒ `degraded`, else `healthy`. Model lockouts are
- * not loaded here, so — as in `isProviderUsable` — they are not consulted.
+ * status ⇒ `down`; a live `rateLimitedUntil` timer OR an unrecovered
+ * rate-limit/quota error ⇒ `degraded`; else `healthy`. Model lockouts are not
+ * loaded here, so — as in `isProviderUsable` — they are not consulted.
  * The filter reuses this, so it cannot drift from the reported state.
  */
 function classifyConnection(conn: ConnectionState, now: number): ProviderHealthState {
@@ -404,6 +420,10 @@ function classifyConnection(conn: ConnectionState, now: number): ProviderHealthS
     const until = new Date(conn.rateLimitedUntil).getTime();
     if (Number.isFinite(until) && until > now) return "degraded";
   }
+  // An untimed limit failure (e.g. a 429 "free allowance used" with no cooldown
+  // timer) is still limited: the shared predicate reads the persisted
+  // `lastErrorType`/`errorCode` the Cooldown Manager reads.
+  if (hasUnrecoveredLimitError(conn)) return "degraded";
   return "healthy";
 }
 
@@ -463,6 +483,7 @@ export function attachProviderReliability(
         connections: conns.map((c, i) => ({
           testStatus: c.testStatus ?? null,
           rateLimitedUntil: c.rateLimitedUntil ?? null,
+          lastErrorType: c.lastErrorType ?? null,
           state: states[i],
         })),
         state: classifyProviderConnections(states),

@@ -33,7 +33,9 @@ export default function RateLimitStatus() {
   const formatMs = (ms) => {
     if (ms < 1000) return t("durationMillisecondsShort", { value: ms });
     if (ms < 60000) return t("durationSecondsShort", { value: Math.ceil(ms / 1000) });
-    return t("durationMinutesShort", { value: Math.ceil(ms / 60000) });
+    if (ms < 3600000) return t("durationMinutesShort", { value: Math.ceil(ms / 60000) });
+    if (ms < 86400000) return t("durationHoursShort", { value: Math.ceil(ms / 3600000) });
+    return t("durationDaysShort", { value: Math.ceil(ms / 86400000) });
   };
 
   return (

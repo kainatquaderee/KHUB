@@ -176,6 +176,7 @@ export default function ResilienceConnectionsClient() {
           {data.meta.countsCapped ? ` (${t("summary.capped")})` : ""}
         </span>
         <span>{t("summary.coolingDown", { count: data.meta.coolingDownCount })}</span>
+        <span>{t("summary.rateLimited", { count: data.meta.rateLimitedCount })}</span>
         <span>{t("summary.unhealthyBreakers", { count: data.meta.unhealthyBreakerCount })}</span>
       </div>
       {data.meta.degraded.length > 0 && (

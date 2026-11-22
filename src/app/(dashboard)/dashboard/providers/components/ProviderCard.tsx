@@ -43,6 +43,10 @@ interface ProviderStats {
   warningLastFailureRelative?: string | null;
   errorCode?: string | null;
   errorTime?: string | null;
+  /** Healthy accounts per the Cooldown Manager (healthy = total − limited). */
+  healthy?: number;
+  /** True when this provider's healthy count is at/below the configured threshold. */
+  attentionNeeded?: boolean;
   allDisabled?: boolean;
   expiryStatus?: "expired" | "expiring_soon" | string | null;
   codexServiceTier?: "default" | "priority" | "flex" | null;
@@ -219,7 +223,8 @@ function getStatusDisplay(
   t: ReturnType<typeof useTranslations>,
   afterConnected?: ReactNode,
   warningDetails?: WarningBadgeDetails,
-  runtimeConnected = false
+  runtimeConnected = false,
+  attentionNeeded = false
 ) {
   const parts: ReactNode[] = [];
   const displayedConnected = connected + (runtimeConnected && connected === 0 ? 1 : 0);
@@ -249,6 +254,13 @@ function getStatusDisplay(
     parts.push(
       <Badge key="error" variant="error" size="sm" dot>
         {errText}
+      </Badge>
+    );
+  }
+  if (attentionNeeded) {
+    parts.push(
+      <Badge key="attention" variant="warning" size="sm" icon="notification_important">
+        {t("attention.badge")}
       </Badge>
     );
   }
@@ -626,7 +638,8 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
                             onActivate: handleWarningBadgeActivate,
                           }
                         : undefined,
-                      devinAgenticAuthenticated
+                      devinAgenticAuthenticated,
+                      stats.attentionNeeded === true
                     )}
                     {stats.expiryStatus === "expired" && (
                       <Badge variant="error" size="sm" dot>

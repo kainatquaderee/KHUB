@@ -144,6 +144,28 @@ function modelVariant(status: ModelStatus) {
   return "default" as const;
 }
 
+/**
+ * Localized label for a raw status enum, with the enum's own value as the
+ * English fallback for catalogs that have not translated the key yet. The
+ * machine value is kept verbatim in the caller's `title` for diagnostics.
+ */
+function enumLabel(t: HealthMessageTranslator, key: string, fallback: string): string {
+  return healthText(t, key, fallback);
+}
+
+function stateLabel(t: HealthMessageTranslator, state: HealthState): string {
+  return enumLabel(t, state, state);
+}
+
+function modelStatusLabel(t: HealthMessageTranslator, status: ModelStatus): string {
+  return enumLabel(t, `modelStatus.${status}`, status);
+}
+
+function circuitBreakerLabel(t: HealthMessageTranslator, state: string): string {
+  const key = state.toUpperCase() === "HALF_OPEN" ? "halfOpen" : state.toLowerCase();
+  return enumLabel(t, `circuitBreaker.${key}`, state);
+}
+
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl border border-border bg-surface/50 p-3">
@@ -195,7 +217,7 @@ function ModelPill({ model }: { model: HealthMatrixModel }) {
           ) : null}
         </div>
         <Badge variant={modelVariant(model.status)} size="sm" dot>
-          {model.status}
+          <span title={model.status}>{modelStatusLabel(t, model.status)}</span>
         </Badge>
       </div>
     </div>
@@ -249,7 +271,7 @@ function AccountRow({ account }: { account: HealthMatrixAccount }) {
           ) : null}
         </div>
         <Badge variant={stateVariant(account.state)} size="sm" dot>
-          {account.state}
+          <span title={account.state}>{stateLabel(t, account.state)}</span>
         </Badge>
       </div>
       {visibleModels.length > 0 || omittedIdleModels > 0 ? (
@@ -446,7 +468,7 @@ export default function ProviderHealthMatrixCard() {
                     </span>
                     <span className="font-mono text-xs text-text-muted">{provider.provider}</span>
                     <Badge variant={stateVariant(provider.state)} size="sm" dot>
-                      {provider.state}
+                      <span title={provider.state}>{stateLabel(t, provider.state)}</span>
                     </Badge>
                     {provider.circuitBreaker ? (
                       <Badge
@@ -459,7 +481,10 @@ export default function ProviderHealthMatrixCard() {
                         }
                         size="sm"
                       >
-                        CB {provider.circuitBreaker.state}
+                        CB{" "}
+                        <span title={provider.circuitBreaker.state}>
+                          {circuitBreakerLabel(t, provider.circuitBreaker.state)}
+                        </span>
                       </Badge>
                     ) : null}
                   </div>

@@ -65,7 +65,8 @@ export function shouldPreserveQuotaSignals(
  * so a multi-day quota reset previously parsed to `null` and fell back to the
  * engine's ~seconds-scale default cooldown.
  *
- * Delegates to `parseIsoDateTimeResetMs` (absolute \"reset at YYYY-MM-DD HH:MM:SS\")
+ * Delegates to `parseIsoDateTimeResetMs` (absolute \"reset at YYYY-MM-DD HH:MM:SS\"),
+ * then `parseProseAbsoluteDateResetMs` (\"comes back on 25 Nov 2026 at 08:59 UTC\"),
  * and then `parseMonthDayResetMs` (year-less \"reset at MM-DD HH:MM:SS UTC\") so
  * every absolute-reset shape an upstream uses resolves to the real wait.
  */
@@ -84,7 +85,85 @@ export function parseDayGranularityResetMs(
   }
   const isoMs = parseIsoDateTimeResetMs(msg, maxMs, nowMs, providerOrZone);
   if (isoMs !== null) return isoMs;
+  const proseMs = parseProseAbsoluteDateResetMs(msg, maxMs, nowMs, providerOrZone);
+  if (proseMs !== null) return proseMs;
   return parseMonthDayResetMs(msg, maxMs, nowMs);
+}
+
+const MONTH_NAME_INDEX: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+/**
+ * Token Harbor reports an exhausted free/weekly allowance as a prose calendar
+ * date rather than a countdown:
+ *
+ *   "Your free allowance for ':free' models is used up. It comes back on
+ *    23 Nov 2026 at 06:05 UTC."
+ *   "You've used this period's free allowance. Your next rolling 7-day period
+ *    starts on 25 Nov 2026 at 08:59 UTC."
+ *
+ * The same response also carries a generic `Retry-After: 3600`, so without this
+ * shape the model was parked for one hour and re-probed into the identical wall
+ * every hour until the real reset days later.
+ *
+ * The stated instant is fully explicit (calendar day + time + zone), which is
+ * what lets `accountFallback` treat it as an authoritative upstream reset
+ * instead of a vague prose duration. A naive stamp defaults to UTC (or the
+ * provider's configured zone, see `resolveNaiveResetZone`).
+ *
+ * Returns null when the shape is absent, malformed, or not in the future.
+ */
+export function parseProseAbsoluteDateResetMs(
+  msg: string,
+  maxMs: number,
+  nowMs: number = Date.now(),
+  providerOrZone?: string | null
+): number | null {
+  const match =
+    /(?:comes?\s+back|starts?|begins?|resets?|available(?:\s+again)?)\s+on\s+(?:[a-z]+day,?\s+)?(\d{1,2})\s+([a-z]{3,9})\.?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(Z|UTC|GMT|[+-]\d{2}:?\d{2})?/i.exec(
+      msg
+    );
+  if (!match) return null;
+  const monthIndex = MONTH_NAME_INDEX[match[2].slice(0, 3).toLowerCase()];
+  if (monthIndex === undefined) return null;
+  const day = Number.parseInt(match[1], 10);
+  const year = Number.parseInt(match[3], 10);
+  const hour = Number.parseInt(match[4], 10);
+  const minute = Number.parseInt(match[5], 10);
+  const second = match[6] ? Number.parseInt(match[6], 10) : 0;
+  if (day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return null;
+
+  const rawZone = match[7]?.toUpperCase();
+  const zone = !rawZone
+    ? resolveNaiveResetZone(msg, providerOrZone)
+    : rawZone === "UTC" || rawZone === "GMT"
+      ? "Z"
+      : /^[+-]\d{4}$/.test(rawZone)
+        ? `${rawZone.slice(0, 3)}:${rawZone.slice(3)}`
+        : rawZone;
+
+  const stamp = `${String(year).padStart(4, "0")}-${String(monthIndex + 1).padStart(2, "0")}-${String(
+    day
+  ).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(
+    second
+  ).padStart(2, "0")}`;
+  const resetMs = Date.parse(`${stamp}${zone}`);
+  if (!Number.isFinite(resetMs)) return null;
+  const waitMs = resetMs - nowMs;
+  if (waitMs <= 0) return null;
+  return Math.min(waitMs, maxMs);
 }
 
 /**

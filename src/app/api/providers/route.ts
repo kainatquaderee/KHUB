@@ -8,6 +8,10 @@ import {
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/db/settings";
 import { resolveResilienceSettings } from "@/lib/resilience/settings";
+import {
+  connectionCooldownStatusById,
+  type CooldownStatus,
+} from "@/lib/resilience/cooldownManager";
 import { isConnectionAutoProtected } from "@omniroute/open-sse/services/rateLimitManager/autoProtection.ts";
 export const dynamic = "force-dynamic";
 import { getAuditRequestContext, logAuditEvent } from "@/lib/compliance/index";
@@ -166,6 +170,17 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error("Failed to read the stored discovery outcomes:", error);
     }
+
+    // The provider page's status must agree with the Cooldown Manager, so read
+    // the Cooldown Manager's own per-connection verdict instead of re-deriving
+    // health here. A read failure must not break the list: an unresolvable
+    // account simply has no status and reads as healthy, exactly as before.
+    let cooldownStatuses = new Map<string, CooldownStatus>();
+    try {
+      cooldownStatuses = await connectionCooldownStatusById();
+    } catch (error) {
+      console.error("Failed to read connection cooldown statuses:", error);
+    }
     const safeConnections = (await projectProviderPrefixCollisions(connections)).map((c) => {
       const providerSpecificData = c.providerSpecificData
         ? sanitizeProviderSpecificDataForResponse(c.providerSpecificData, { revealKeys })
@@ -184,6 +199,11 @@ export async function GET(request: Request) {
         // never "healthy".
         discoveryState:
           discoveryStates.get(`${String(c.provider ?? "")}:${String(c.id ?? "")}`) ?? null,
+        // The Cooldown Manager's own verdict for this account, so the provider
+        // page can never disagree with it about a rate-limited account. Absent
+        // from the map means "healthy", which keeps older payloads/caches from
+        // changing the count.
+        cooldownStatus: cooldownStatuses.get(String(c.id ?? "")) ?? "healthy",
         rateLimitAutoProtected: isConnectionAutoProtected(
           {
             provider: String(c.provider),

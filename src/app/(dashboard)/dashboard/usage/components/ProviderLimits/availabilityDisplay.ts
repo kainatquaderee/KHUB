@@ -157,6 +157,9 @@ function resolveDisplayState(
   const accountBlocked = decision?.usable === false;
   const terminal = reasons.some((reason) => reason.type === "terminal");
   const cooldown = reasons.filter((reason) => reason.type === "cooldown");
+  // A rate-limited verdict with no cooldown timer (see healthOverview) still
+  // blocks routing, so it must never land in `ok`.
+  const rateLimited = reasons.some((reason) => reason.type === "rateLimited");
   let kind: DisplayKind = account.status === "paused" ? "paused" : terminal ? "act" : "ok";
   let recoverAt: string | undefined;
   let waitMs: number | null = null;
@@ -168,6 +171,9 @@ function resolveDisplayState(
     waitMs = recovery.waitMs;
     waitDuration = recovery.waitDuration;
   }
+  // Only reachable without a cooldown/timer, so it renders as "needs attention"
+  // rather than inventing a countdown.
+  if (kind === "ok" && rateLimited) kind = "act";
   const partial =
     kind === "ok" &&
     ((server?.scopes.some((scope) => scope.decision.usable !== true) ?? false) ||

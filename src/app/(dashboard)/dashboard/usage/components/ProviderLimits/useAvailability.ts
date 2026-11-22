@@ -19,6 +19,7 @@ import {
   SUMMARY_FRESHNESS_MS,
   type CooldownObservation,
 } from "./runtimeCooldown";
+import { isCooldownStatus } from "@/lib/resilience/cooldownStatuses";
 
 async function readSummary(path: string) {
   const response = await fetchWithTimeout(path, {
@@ -33,7 +34,7 @@ function validCooldown(row: HealthCooldown): boolean {
   return (
     !!row &&
     typeof row.id === "string" &&
-    ["terminal", "cooling_down", "model_locked", "unavailable", "healthy"].includes(row.status) &&
+    isCooldownStatus(row.status) &&
     Array.isArray(row.lockouts) &&
     row.lockouts.every(
       (lock) => typeof lock.model === "string" && Number.isFinite(lock.remainingMs)

@@ -1,4 +1,5 @@
 import { isAutomatedTestProcess } from "@/shared/utils/testProcess";
+import { MAX_MODEL_LOCKOUT_COOLDOWN_MS } from "@/shared/constants/modelLockout";
 
 export interface ModelLockoutSettings {
   enabled: boolean;
@@ -71,7 +72,10 @@ export function resolveModelLockoutSettings(
   const maxCooldownMs = Math.max(
     toInteger(raw.maxCooldownMs, DEFAULT_MODEL_LOCKOUT_SETTINGS.maxCooldownMs, {
       min: isTest ? 0 : 5_000,
-      max: 3_600_000,
+      // No product ceiling: a provider-stated reset can be days out and the
+      // backoff ladder may reach days too. Shared with the API schema so a
+      // saved week is never clamped back to 1h here.
+      max: MAX_MODEL_LOCKOUT_COOLDOWN_MS,
     }),
     baseCooldownMs // cap must be >= base or exponential backoff is meaningless
   );

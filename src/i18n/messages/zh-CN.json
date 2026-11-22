@@ -2216,6 +2216,17 @@
       "degraded": "需要关注",
       "healthy": "健康"
     },
+    "comboHealthStatus": {
+      "healthy": "健康",
+      "warning": "警告",
+      "critical": "严重"
+    },
+    "comboHealthSeverity": {
+      "info": "信息",
+      "warning": "警告",
+      "critical": "严重"
+    },
+    "comboHealthIssueCombo": "{name} · 评分 {score}",
     "comboHealthModelProviderCount": "跨 {providers} 个提供者的 {models} 个模型",
     "comboHealthGiniCoefficient": "基尼系数",
     "comboHealthRequestCount": "{count} 次请求",
@@ -5104,6 +5115,19 @@
     "healthy": "健康",
     "degraded": "降级",
     "down": "下线",
+    "modelStatus": {
+      "healthy": "健康",
+      "degraded": "降级",
+      "error": "错误",
+      "locked": "已锁定",
+      "idle": "空闲"
+    },
+    "circuitBreaker": {
+      "open": "开启",
+      "halfOpen": "半开",
+      "closed": "关闭",
+      "unknown": "未知"
+    },
     "uptime": "正常运行时间",
     "memory": "内存",
     "memoryRss": "内存（RSS）",
@@ -7009,11 +7033,36 @@
     "anonymousFallbackEnabled": "为 {provider} 启用匿名回退",
     "anonymousFallbackDisabled": "已禁用 {provider} 的匿名回退 — 耗尽的连接将跳过此提供者",
     "anonymousFallbackUpdateFailed": "无法更新匿名回退设置",
+    "attention": {
+      "badge": "需要关注",
+      "bannerTitle": "需要关注",
+      "bannerBody": "{total} 个账号中有 {healthy} 个健康 — 达到或低于您的阈值 {threshold}。",
+      "listTitle": "{count, plural, one {# 个提供者需要关注} other {# 个提供者需要关注}}",
+      "listBody": "健康账号数量达到或低于配置的阈值。",
+      "listMore": "另有 {count} 个",
+      "viewProvider": "查看提供者",
+      "toastTitle": "需要关注",
+      "toastMessage": "{provider}:{total} 个账号中有 {healthy} 个健康(阈值 {threshold})。",
+      "toastSummary": "{count, plural, one {# 个提供者需要关注} other {# 个提供者需要关注}}",
+      "adjustThreshold": "调整阈值"
+    },
     "retryDelayTitle": "重试延迟",
     "retryDelayDesc": "当提供者未告知何时重试时，连接在速率限制错误后休眠的时长。自动模式使用内置退避；提供者发送的重置时间始终优先。",
     "retryDelayAuto": "自动",
     "retryDelaySaved": "重试延迟已保存",
     "retryDelayUpdateFailed": "更新重试延迟失败",
+    "usageLinkTitle": "自定义用量链接",
+    "usageLinkDesc": "通过您自己的端点读取此提供者的剩余配额。连接仍可用自己的配额端点覆盖此设置。",
+    "usageLinkPlaceholder": "https://example.com/api/quota",
+    "usageLinkSave": "保存",
+    "usageLinkSaved": "自定义用量链接已保存",
+    "usageLinkUpdateFailed": "更新自定义用量链接失败",
+    "usageLinkInvalidUrl": "请输入完整的 http(s) URL",
+    "usageLinkTest": "测试",
+    "usageLinkTesting": "正在测试...",
+    "usageLinkTestOk": "链接可用 — 端点已响应。",
+    "usageLinkTestBlocked": "被出站 URL 策略阻止",
+    "usageLinkTestFailed": "链接无法访问",
     "batchDeleteFailed": "批量删除失败",
     "batchDeleteNetworkError": "批量删除时网络错误",
     "batchUpdateFailed": "批量更新失败",
@@ -7762,6 +7811,7 @@
     "routingStrategyComboFallbackSummary": " 组合使用每个组合配置的策略（默认优先级/备用）。",
     "providerAccountRoutingTitle": "多账户路由",
     "providerAccountRoutingDesc": "覆盖此提供者的全局账户策略（与 9router 保持一致）。",
+    "providerAccountHealthyHint": "可路由账户数(已启用、未冷却、无未恢复的限速/配额错误)占总账户数",
     "providerRoutingStrategy": "账户策略",
     "providerRoutingInheritGlobal": "继承全局默认值",
     "quotaPreflightTitle": "配额预检阈值",
@@ -8921,6 +8971,14 @@
     "modelLockoutSaveFailed": "保存模型锁定设置失败",
     "modelLockoutLoading": "正在加载模型锁定设置...",
     "modelLockoutBaseRangeError": "基础冷却时间必须介于 5,000 毫秒和 600,000 毫秒之间",
+    "providerAttentionTitle": "提供者关注阈值",
+    "providerAttentionDescription": "当提供者的健康账户数降至或低于此值时,在应用内显示警告。账户数少于此值的提供者不会发出警告。",
+    "providerAttentionField": "健康账户阈值",
+    "providerAttentionSaved": "关注阈值已保存",
+    "providerAttentionLoadFailed": "加载关注阈值失败",
+    "providerAttentionSaveFailed": "保存关注阈值失败",
+    "providerAttentionRangeError": "请输入大于或等于 0 的整数。",
+    "providerAttentionHint": "无上限 — 可按您的账户数量需要任意调高。",
     "modelLockoutMaxRangeError": "最大冷却时间必须介于 5,000 毫秒和 3,600,000 毫秒之间",
     "modelLockoutOrderError": "最大冷却时间必须大于或等于基础冷却时间",
     "modelLockoutStepsRangeError": "最大退避步骤数必须介于 0 和 20 之间",
@@ -10335,6 +10393,7 @@
     "durationSecondsShort": "{value} 秒",
     "durationMinutesShort": "{value} 分",
     "durationHoursShort": "{value} 时",
+    "durationDaysShort": "{value} 天",
     "reasonSeparator": "-",
     "notAvailableSymbol": "-",
     "providerLimits": "提供者限制",
@@ -10644,6 +10703,7 @@
     "healthUnavailable": "不可用",
     "healthPeakHourProtection": "高峰时段保护",
     "healthCooldown": "冷却中",
+    "healthRateLimited": "被提供者限速",
     "healthQuotaExhausted": "配额已用尽",
     "healthOverview": "健康总览",
     "layoutFull": "完整",
@@ -15100,6 +15160,22 @@
     "title": "连接韧性",
     "reassuranceTitle": "您的连接会自动恢复",
     "reassuranceDetail": "通常无需执行任何操作。连接失败后，OmniRoute 会暂时停用该连接，之后再安全地重试。",
+    "availability": {
+      "available": "可用",
+      "noCredential": "无凭据",
+      "authExpired": "需要重新认证",
+      "quotaExhausted": "配额已用尽",
+      "quotaExhaustedRecheck": "配额已用尽 · 将于 {at} 重新检查",
+      "disabled": "已禁用",
+      "staleTerminal": "过期的锁定(原状态 {previousState})— 请重新验证",
+      "unhealthy": "异常",
+      "unhealthyRetryable": "异常(可重试)"
+    },
+    "failureKind": {
+      "rateLimit": "限速",
+      "quotaExhausted": "配额已用尽",
+      "transient": "瞬时"
+    },
     "plainStates": {
       "healthy": "可以发送请求",
       "coolingDown": "即将重试",
@@ -15115,12 +15191,18 @@
       "lastError": "最近错误",
       "lockouts": "锁定",
       "healthy": "健康",
+      "rateLimited": "限速",
       "coolingDown": "冷却",
       "circuitOpen": "断路器开启",
       "recovering": "恢复中",
       "degraded": "降级",
       "terminal": "终止",
       "unknown": "未知",
+      "errorRateLimit": "限速",
+      "errorAuth": "认证",
+      "errorServer": "服务器错误",
+      "errorNotFound": "未找到",
+      "errorOther": "其他",
       "never": "-"
     },
     "timeline": {
@@ -15184,6 +15266,7 @@
     "summary": {
       "total": "{count} 个连接",
       "coolingDown": "{count} 个冷却中",
+      "rateLimited": "{count} 个限速",
       "unhealthyBreakers": "{count} 个断路器未关闭",
       "capped": "显示前 1000 个"
     },
@@ -15198,6 +15281,7 @@
         "database": "数据库",
         "circuitBreaker": "断路器",
         "modelLockouts": "模型锁定",
+        "cooldownStatus": "冷却状态",
         "count": "连接数"
       }
     }
@@ -15249,6 +15333,7 @@
     },
     "status": {
       "cooling_down": "冷却中",
+      "rate_limited": "限速",
       "model_locked": "模型已锁定",
       "unavailable": "不可用",
       "terminal": "需要关注",

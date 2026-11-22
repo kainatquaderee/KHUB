@@ -316,6 +316,7 @@ export interface ResilienceSkipReason {
     | "provider_circuit_half_open"
     | "connection_not_allowed"
     | "connection_cooldown"
+    | "connection_limit_error"
     | "connection_terminal_status"
     | "connection_unavailable"
     | "codex_scope_cooldown"

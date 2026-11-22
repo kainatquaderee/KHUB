@@ -2216,6 +2216,17 @@
       "degraded": "Needs attention",
       "healthy": "Healthy"
     },
+    "comboHealthStatus": {
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "comboHealthSeverity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "comboHealthIssueCombo": "{name} · score {score}",
     "comboHealthModelProviderCount": "{models} models across {providers} providers",
     "comboHealthGiniCoefficient": "Gini coefficient",
     "comboHealthRequestCount": "{count} requests",
@@ -5104,6 +5115,19 @@
     "healthy": "Healthy",
     "degraded": "Degraded",
     "down": "Down",
+    "modelStatus": {
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "error": "Error",
+      "locked": "Locked",
+      "idle": "Idle"
+    },
+    "circuitBreaker": {
+      "open": "Open",
+      "halfOpen": "Half Open",
+      "closed": "Closed",
+      "unknown": "Unknown"
+    },
     "uptime": "Uptime",
     "memory": "Memory",
     "memoryRss": "Memory (RSS)",
@@ -7009,6 +7033,19 @@
     "anonymousFallbackEnabled": "Anonymous fallback enabled for {provider}",
     "anonymousFallbackDisabled": "Anonymous fallback disabled for {provider} — exhausted connections will skip this provider",
     "anonymousFallbackUpdateFailed": "Failed to update anonymous fallback setting",
+    "attention": {
+      "badge": "Attention needed",
+      "bannerTitle": "Attention needed",
+      "bannerBody": "{healthy} of {total} accounts are healthy — at or below your threshold of {threshold}.",
+      "listTitle": "{count, plural, one {# provider needs attention} other {# providers need attention}}",
+      "listBody": "Healthy account counts are at or below the configured threshold.",
+      "listMore": "and {count} more",
+      "viewProvider": "View provider",
+      "toastTitle": "Attention needed",
+      "toastMessage": "{provider}: {healthy} of {total} accounts healthy (threshold {threshold}).",
+      "toastSummary": "{count, plural, one {# provider needs attention} other {# providers need attention}}",
+      "adjustThreshold": "Adjust threshold"
+    },
     "retryDelayTitle": "Retry delay",
     "retryDelayDesc": "How long a connection rests after a rate-limit error when the provider does not say when to retry. Auto uses the built-in backoff; a reset time sent by the provider always wins.",
     "retryDelayAuto": "Auto",
@@ -7774,6 +7811,7 @@
     "routingStrategyComboFallbackSummary": " Combos use each combo's configured strategy (default priority/fallback).",
     "providerAccountRoutingTitle": "Multi-account routing",
     "providerAccountRoutingDesc": "Override global account strategy for this provider (9router parity).",
+    "providerAccountHealthyHint": "Accounts routable now (enabled, not cooling, no unrecovered rate-limit/quota error) out of total accounts",
     "providerRoutingStrategy": "Account strategy",
     "providerRoutingInheritGlobal": "Inherit global default",
     "quotaPreflightTitle": "Quota Preflight Cutoff",
@@ -8933,13 +8971,21 @@
     "modelLockoutSaveFailed": "Failed to save model lockout settings",
     "modelLockoutLoading": "Loading model lockout settings...",
     "modelLockoutBaseRangeError": "Base Cooldown must be between 5,000ms and 600,000ms",
-    "modelLockoutMaxRangeError": "Max Cooldown must be between 5,000ms and 3,600,000ms",
+    "providerAttentionTitle": "Provider attention threshold",
+    "providerAttentionDescription": "Show an in-app warning when a provider's healthy account count drops to or below this value. Providers with fewer accounts than this never warn.",
+    "providerAttentionField": "Healthy account threshold",
+    "providerAttentionSaved": "Attention threshold saved",
+    "providerAttentionLoadFailed": "Failed to load the attention threshold",
+    "providerAttentionSaveFailed": "Failed to save the attention threshold",
+    "providerAttentionRangeError": "Enter a whole number of 0 or more.",
+    "providerAttentionHint": "No upper limit — raise it as far as your account counts require.",
+    "modelLockoutMaxRangeError": "Max Cooldown must be at least 5,000ms (no upper limit)",
     "modelLockoutOrderError": "Max Cooldown must be greater than or equal to Base Cooldown",
     "modelLockoutStepsRangeError": "Max Backoff Steps must be between 0 and 20",
     "removeErrorCode": "Remove {code}",
     "addErrorCode": "Add error code...",
     "suggestions": "Suggestions:",
-    "modelLockoutMaxCooldownHint": "≥ Base Cooldown — 3,600,000ms",
+    "modelLockoutMaxCooldownHint": "≥ Base Cooldown — no upper limit",
     "modelLockoutEnabled": "Enable Model Lockout",
     "modelLockoutEnabledDescription": "When enabled, models that fail with configured error codes are temporarily locked to prevent retry loops.",
     "modelLockoutErrorCodes": "Error Codes",
@@ -8947,7 +8993,7 @@
     "modelLockoutBaseCooldown": "Base Cooldown (ms)",
     "modelLockoutBaseCooldownDescription": "Initial cooldown duration in milliseconds before a model can be retried.",
     "modelLockoutMaxCooldown": "Max Cooldown (ms)",
-    "modelLockoutMaxCooldownDescription": "Maximum cooldown duration in milliseconds. Prevents excessively long lockouts.",
+    "modelLockoutMaxCooldownDescription": "Maximum cooldown duration in milliseconds. Prevents excessively long lockouts. A reset time the provider itself states — a Retry-After header, google.rpc.RetryInfo, or an explicit date in the error body — is honored as-is, beyond this cap.",
     "modelLockoutExponentialBackoff": "Exponential Backoff",
     "modelLockoutExponentialBackoffDescription": "When enabled, each consecutive failure increases the cooldown duration exponentially.",
     "modelLockoutMaxBackoffSteps": "Max Backoff Steps",
@@ -10351,6 +10397,7 @@
     "durationSecondsShort": "{value}s",
     "durationMinutesShort": "{value}m",
     "durationHoursShort": "{value}h",
+    "durationDaysShort": "{value}d",
     "reasonSeparator": "-",
     "notAvailableSymbol": "-",
     "providerLimits": "Provider Limits",
@@ -10656,6 +10703,7 @@
     "healthUnavailable": "Unavailable",
     "healthPeakHourProtection": "Peak-hour protection",
     "healthCooldown": "Cooldown",
+    "healthRateLimited": "Rate limited by the provider",
     "healthQuotaExhausted": "Quota exhausted",
     "healthOverview": "Overview",
     "layoutFull": "Full",
@@ -15112,6 +15160,22 @@
     "title": "Connection Resilience",
     "reassuranceTitle": "Your connections recover automatically",
     "reassuranceDetail": "Usually no action is needed. OmniRoute temporarily rests a connection after failures, then safely tries it again.",
+    "availability": {
+      "available": "Available",
+      "noCredential": "No credential",
+      "authExpired": "Reauthentication required",
+      "quotaExhausted": "Quota exhausted",
+      "quotaExhaustedRecheck": "Quota exhausted · rechecks {at}",
+      "disabled": "Disabled",
+      "staleTerminal": "Stale lock (was {previousState}) — re-verify",
+      "unhealthy": "Unhealthy",
+      "unhealthyRetryable": "Unhealthy (retryable)"
+    },
+    "failureKind": {
+      "rateLimit": "Rate limit",
+      "quotaExhausted": "Quota exhausted",
+      "transient": "Transient"
+    },
     "plainStates": {
       "healthy": "Requests can be sent",
       "coolingDown": "Trying again soon",
@@ -15127,12 +15191,18 @@
       "lastError": "Last Error",
       "lockouts": "Lockouts",
       "healthy": "Healthy",
+      "rateLimited": "Rate Limited",
       "coolingDown": "Cooldown",
       "circuitOpen": "Circuit Open",
       "recovering": "Recovering",
       "degraded": "Degraded",
       "terminal": "Terminal",
       "unknown": "Unknown",
+      "errorRateLimit": "Rate limit",
+      "errorAuth": "Authentication",
+      "errorServer": "Server error",
+      "errorNotFound": "Not found",
+      "errorOther": "Other",
       "never": "-"
     },
     "timeline": {
@@ -15196,6 +15266,7 @@
     "summary": {
       "total": "{count} connections",
       "coolingDown": "{count} cooling down",
+      "rateLimited": "{count} rate limited",
       "unhealthyBreakers": "{count} breakers not closed",
       "capped": "showing first 1000"
     },
@@ -15210,6 +15281,7 @@
         "database": "Database",
         "circuitBreaker": "Circuit Breaker",
         "modelLockouts": "Model Lockouts",
+        "cooldownStatus": "Cooldown Status",
         "count": "Connection Count"
       }
     }
@@ -15261,6 +15333,7 @@
     },
     "status": {
       "cooling_down": "Cooling down",
+      "rate_limited": "Rate limited",
       "model_locked": "Model locked",
       "unavailable": "Unavailable",
       "terminal": "Needs attention",

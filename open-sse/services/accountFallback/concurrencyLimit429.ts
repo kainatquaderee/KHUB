@@ -17,7 +17,12 @@ export const CONCURRENCY_LIMIT_COOLDOWN_MS = 1_000;
 
 export const CONCURRENCY_LIMITED_REASON = "concurrency_limited";
 
-type RetryHint = { retryAfterMs: number; provenance: "header" | "google_rpc_retry_info" | "body" };
+// Local mirror of accountFallback's RetryHintProvenance (kept structural to avoid an
+// import cycle: accountFallback imports this module).
+type RetryHint = {
+  retryAfterMs: number;
+  provenance: "header" | "google_rpc_retry_info" | "body_absolute" | "body";
+};
 
 export function buildConcurrencyLimitFallback(
   status: number,

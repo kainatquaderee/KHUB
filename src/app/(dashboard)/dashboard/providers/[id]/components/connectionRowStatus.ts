@@ -86,6 +86,23 @@ export function getStatusPresentation(
     };
   }
 
+  // The Cooldown Manager can flag an account `rate_limited`/`model_locked` while
+  // its stored test status is still `active` (e.g. Token Harbor records a 429
+  // with no cooldown timer). Show a warning instead of "Connected" so the row
+  // agrees with the Cooldown Manager.
+  if (
+    connection.cooldownStatus === "rate_limited" ||
+    connection.cooldownStatus === "model_locked"
+  ) {
+    return {
+      statusVariant: "warning",
+      statusLabel: t(ERROR_TYPE_LABELS.upstream_rate_limited.labelKey),
+      errorType: "upstream_rate_limited",
+      errorBadge: null,
+      errorTextClass: "text-warning",
+    };
+  }
+
   if (effectiveStatus === "active" || effectiveStatus === "success") {
     return {
       statusVariant: "success",

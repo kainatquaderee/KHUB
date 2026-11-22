@@ -15,6 +15,8 @@ export interface ResilienceConnectionsResponse {
   meta: {
     totalConnections: number;
     coolingDownCount: number;
+    /** Connections the Cooldown Manager reports as `rate_limited` (429 without a timer). */
+    rateLimitedCount: number;
     unhealthyBreakerCount: number;
     countsCapped: boolean; // true when totalConnections > CONNECTION_LIMIT
     degraded: string[];
@@ -35,7 +37,12 @@ export interface ConnectionState {
   authType: string;
   priority: number;
   isActive: boolean;
-  connectionStatus: "healthy" | "cooling_down" | "circuit_open" | "terminal";
+  /**
+   * Coarse badge state. `rate_limited` is the Cooldown Manager's verdict for a
+   * connection that recorded a 429/limit error without necessarily setting a
+   * `rateLimitedUntil` timer (e.g. Token Harbor's "free allowance used").
+   */
+  connectionStatus: "healthy" | "rate_limited" | "cooling_down" | "circuit_open" | "terminal";
   rateLimitedUntil: string | null;
   backoffLevel: number;
   testStatus: string | null;
