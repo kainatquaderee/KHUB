@@ -112,10 +112,10 @@ lastUpdated: 2026-11-03
   `tests/unit/icon-map-object-values.test.ts` covers names stored in lookup objects);
   `scripts/dev/codemod-material-icons.mjs <dir|file>... [--write]` rewrites literal
   `<span className="material-symbols-outlined">` spans to `<Icon>`.
-- **Brand.** `src/shared/components/OmniRouteLogo.tsx` wraps the kit: the default export `OmniRouteLogo`
-  renders `ProductIcon product="omniroute" variant="glyph"` (inline SVG, `basePath`-safe) and
-  `OmniRouteLockup` renders `ProductLockup product="omniroute"` (accessible name "Keak OmniRoute") or, for
-  white-label operators, their own `name`/`logoSrc`. The standalone
+- **Brand.** `src/shared/components/OmniRouteLogo.tsx` wraps the local KHUB brand: the default
+  export `OmniRouteLogo` renders `KhubLogo` (`src/shared/components/KhubLogo.tsx`) and
+  `OmniRouteLockup` renders `KhubWordmark` with the accessible name `KHUB`, or a white-label
+  operator's own `name`/`logoSrc`. The standalone
   screens — `src/app/login/page.tsx`, `src/app/status/page.tsx`, `src/app/maintenance/page.tsx`,
   `src/app/offline/page.tsx`, `src/app/not-found.tsx` and `src/shared/components/ErrorPageScaffold.tsx`
   — show the lockup; `tests/unit/brand-pages-static.test.ts` guards it.
