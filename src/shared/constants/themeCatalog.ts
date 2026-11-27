@@ -16,7 +16,7 @@ import {
 export const THEME_FAMILIES = [
   "Signature",
   "Atmospheric",
-  "Parody",
+  "Homage",
   "Creative",
   "Accessibility",
 ] as const;
@@ -43,7 +43,7 @@ export interface ThemeCatalogEntry {
   readonly family: ThemeFamily;
   /** Source of the palette's colour/typography idea: a repo file or an official brand page. */
   readonly source: { readonly label: string; readonly href: string };
-  /** Parody rows record the referenced brand; assets are always original (see the parody doc). */
+  /** Homage rows record the referenced brand; assets are always original. */
   readonly parodyOf?: { readonly brand: string; readonly sourceUrl: string };
   readonly forcedDark: boolean;
   readonly backgrounds: { readonly light: string; readonly dark: string };
@@ -229,8 +229,8 @@ export const THEME_CATALOG: readonly ThemeCatalogEntry[] = [
   {
     id: "gutgub",
     label: "Gutgub",
-    description: "Playful code-forge parody in slate and blue.",
-    family: "Parody",
+    description: "Playful code-forge homage in slate and blue.",
+    family: "Homage",
     source: { label: "GitHub", href: "https://github.com/" },
     parodyOf: { brand: "GitHub", sourceUrl: "https://github.com/" },
     forcedDark: false,
@@ -261,8 +261,8 @@ export const THEME_CATALOG: readonly ThemeCatalogEntry[] = [
   {
     id: "youyou",
     label: "Youyou",
-    description: "Video-club parody with a warm red highlight.",
-    family: "Parody",
+    description: "Video-club homage with a warm red highlight.",
+    family: "Homage",
     source: { label: "YouTube", href: "https://www.youtube.com/" },
     parodyOf: { brand: "YouTube", sourceUrl: "https://www.youtube.com/" },
     forcedDark: false,
@@ -293,8 +293,8 @@ export const THEME_CATALOG: readonly ThemeCatalogEntry[] = [
   {
     id: "gutlib",
     label: "Gutlib",
-    description: "Repository-forge parody in soft plum.",
-    family: "Parody",
+    description: "Repository-forge homage in soft plum.",
+    family: "Homage",
     source: { label: "GitLab", href: "https://gitlab.com/" },
     parodyOf: { brand: "GitLab", sourceUrl: "https://gitlab.com/" },
     forcedDark: false,

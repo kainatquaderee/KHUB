@@ -8,12 +8,13 @@ import i18nConfig from "../../config/i18n.json" with { type: "json" };
 /**
  * Parity guard: every locale declared in config/i18n.json (the single source of
  * truth) must exist on every in-repo surface — dashboard catalog, CLI catalog,
- * docs mirror (README.md / llm.txt / CHANGELOG.md), README flag link and the
- * docs/i18n/README.md index row — and the README headline count must match.
- * Locales listed in `docsExcluded` (the English source) only need the two
- * catalogs. The reverse direction is guarded as well: every docs-surface entry
- * (index row, README flag link, docs/i18n/ directory) must map back to a
- * configured docs locale, so a retired locale cannot leave orphans behind.
+ * docs mirror (README.md / llm.txt / CHANGELOG.md) and the docs/i18n/README.md
+ * index row. Locales listed in `docsExcluded` (the English source) only need the
+ * two catalogs. The reverse direction is guarded as well: every docs-surface entry
+ * (index row, docs/i18n/ directory) must map back to a configured docs locale, so
+ * a retired locale cannot leave orphans behind. The root README no longer carries
+ * the language bar (removed with the rebrand), so its per-locale link scan only
+ * matters if such links are reintroduced.
  */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -35,16 +36,9 @@ for (const { code } of i18nConfig.locales) {
       existsSync(path.join(ROOT, "docs", "i18n", code, "CHANGELOG.md")),
       "CHANGELOG mirror"
     );
-    assert.ok(readme.includes(`docs/i18n/${code}/README.md`), "README flag link");
     assert.ok(docsIndex.includes(`(\`${code}\`)`), "docs/i18n/README.md index row");
   });
 }
-
-test("README headline count matches config/i18n.json", () => {
-  const m = readme.match(/In (\d+) languages/);
-  assert.ok(m, "README must carry the 'In N languages' headline");
-  assert.equal(Number(m[1]), i18nConfig.locales.length);
-});
 
 test("docs/i18n/README.md counts sentence matches config/i18n.json", () => {
   const sentence = `into ${i18nConfig.locales.length - 1} languages; together with the English source, the UI supports ${i18nConfig.locales.length} locales`;
@@ -68,7 +62,8 @@ test("no orphan locale surface outside config/i18n.json (reverse parity)", () =>
     }
   }
 
-  // Root README.md language block: docs/i18n/<code>/README.md flag links.
+  // Root README.md mirror links (the language bar was removed with the rebrand;
+  // this scan guards against per-locale flag links reintroduced later).
   for (const [, code] of readme.matchAll(/docs\/i18n\/([^/\s"')]+)\/README\.md/g)) {
     if (!docsLocales.has(code)) offenders.push(`README.md link: ${code}`);
   }

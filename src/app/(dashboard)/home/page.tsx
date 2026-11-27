@@ -2,9 +2,6 @@ import { getMachineId } from "@/shared/utils/machine";
 import { loadHomeSettings } from "./loadHomeSettings";
 import HomePageClient from "../dashboard/HomePageClient";
 import BootstrapBanner from "../dashboard/BootstrapBanner";
-import KimiSponsorBanner from "../dashboard/KimiSponsorBanner";
-import CheaperInferenceSponsorBanner from "../dashboard/CheaperInferenceSponsorBanner";
-import VscodeCopilotBanner from "../dashboard/VscodeCopilotBanner";
 import NewsBanner from "../dashboard/NewsBanner";
 import FirstRunReadinessCard from "../dashboard/FirstRunReadinessCard";
 import HomeSystemMetricsCards from "./HomeSystemMetricsCards";
@@ -21,9 +18,6 @@ export default async function HomePage() {
       {isBootstrapped && <BootstrapBanner />}
       <FirstRunReadinessCard setupComplete={Boolean(settings.setupComplete)} />
       <UnpricedUsageBanner />
-      <KimiSponsorBanner />
-      <CheaperInferenceSponsorBanner />
-      <VscodeCopilotBanner />
       <NewsBanner />
       <div className="mb-4">
         <HomeSystemMetricsCards />

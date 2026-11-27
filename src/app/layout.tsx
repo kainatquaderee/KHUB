@@ -32,7 +32,7 @@ export async function generateMetadata() {
   const customFaviconUrl = settings.customFaviconUrl || settings.customFaviconBase64;
 
   return {
-    title: `${instanceName} — KHUB AI Gateway for Multi-Provider LLMs`,
+    title: `${instanceName} — AI Gateway for Multi-Provider LLMs`,
     description:
       "KHUB is an AI gateway for multi-provider LLMs. One endpoint for all your AI providers.",
     manifest: "/manifest.webmanifest",

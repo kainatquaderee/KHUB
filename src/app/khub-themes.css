@@ -180,7 +180,7 @@ html:root[data-theme="dark"][data-khub-skin="aurora"] {
   --khub-font-display: var(--ci-font-ui);
 }
 
-/* Gutgub — Parody */
+/* Gutgub — Homage */
 html:root:not([data-theme="dark"])[data-khub-skin="gutgub"] {
   --khub-background: #f6f8fa;
   --khub-text: #1f2328;
@@ -215,7 +215,7 @@ html:root[data-theme="dark"][data-khub-skin="gutgub"] {
   --khub-font-display: var(--ci-font-code);
 }
 
-/* Youyou — Parody */
+/* Youyou — Homage */
 html:root:not([data-theme="dark"])[data-khub-skin="youyou"] {
   --khub-background: #ffffff;
   --khub-text: #0f0f0f;
@@ -250,7 +250,7 @@ html:root[data-theme="dark"][data-khub-skin="youyou"] {
   --khub-font-display: var(--ci-font-ui);
 }
 
-/* Gutlib — Parody */
+/* Gutlib — Homage */
 html:root:not([data-theme="dark"])[data-khub-skin="gutlib"] {
   --khub-background: #f9f7f5;
   --khub-text: #25232a;

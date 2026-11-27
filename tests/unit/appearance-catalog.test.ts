@@ -93,7 +93,7 @@ test("exactly 14 canonical palette IDs, unique labels and unique aliases", () =>
 
   assert.deepEqual(
     [...THEME_FAMILIES],
-    ["Signature", "Atmospheric", "Parody", "Creative", "Accessibility"]
+    ["Signature", "Atmospheric", "Homage", "Creative", "Accessibility"]
   );
   for (const entry of THEME_CATALOG) {
     assert.ok(THEME_FAMILIES.includes(entry.family), `${entry.id} uses a closed family`);
@@ -118,26 +118,23 @@ test("exactly 14 canonical palette IDs, unique labels and unique aliases", () =>
   assert.equal(normalizeAppearancePalette("khub-signature"), "editions");
 });
 
-test("parody rows cite source brand → original label → lowercase ASCII ID", () => {
-  const doc = read("docs/guides/KHUB_PARODY_THEMES.md");
-  const parodies = THEME_CATALOG.filter((entry) => entry.parodyOf);
+test("homage entries carry a source brand, an original label and a lowercase ASCII ID", () => {
+  const homages = THEME_CATALOG.filter((entry) => entry.parodyOf);
   assert.deepEqual(
-    parodies.map((entry) => entry.id),
+    homages.map((entry) => entry.id),
     ["gutgub", "youyou", "gutlib"]
   );
-  for (const entry of parodies) {
+  assert.deepEqual(
+    homages.map((entry) => entry.parodyOf?.brand),
+    ["GitHub", "YouTube", "GitLab"]
+  );
+  for (const entry of homages) {
     const { brand, sourceUrl } = entry.parodyOf!;
-    assert.match(entry.id, /^[a-z]+(?:-[a-z]+)*$/);
-    assert.equal(entry.source.href, sourceUrl);
-    const row = doc.split("\n").find((line) => line.includes(`[${brand}](${sourceUrl})`));
-    assert.ok(row, `the convention doc has a row for ${brand}`);
-    assert.ok(
-      row.includes(entry.label) && row.includes(`\`${entry.id}\``),
-      `the convention doc records ${brand} → ${entry.label} → ${entry.id}`
-    );
+    assert.match(entry.id, /^[a-z]+(?:-[a-z]+)*$/, `${entry.id} must be a lowercase ASCII ID`);
+    assert.ok(brand.trim().length > 0, `${entry.id} records the brand it honours`);
+    assert.ok(entry.label.trim().length > 0, `${entry.id} has an original label`);
+    assert.equal(entry.source.href, sourceUrl, `${entry.id} cites its homage source URL`);
   }
-  assert.match(doc, /No third-party logo, icon, wordmark/);
-  assert.match(doc, /aliases.*never rendered as tiles/s);
 });
 
 test("khub-themes.css mirrors every catalog token for both modes; no orphan skin blocks", () => {

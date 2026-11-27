@@ -511,9 +511,9 @@ export default function AppearanceTab() {
               <Input
                 type="text"
                 aria-label={t("appName")}
-                value={settings.instanceName || "OmniRoute"}
+                value={settings.instanceName || "KHUB"}
                 onChange={(e) => updateSetting("instanceName", e.target.value)}
-                placeholder="OmniRoute"
+                placeholder="KHUB"
                 maxLength={100}
                 className="w-48 shrink-0"
               />

@@ -36,7 +36,9 @@ test("web manifest is KHUB-branded and references only local generated icons", a
 
 test("layout metadata is KHUB-branded and all default icons are generated", () => {
   const layout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
-  assert.match(layout, /KHUB AI Gateway for Multi-Provider LLMs/);
+  // instanceName defaults to "KHUB"; the title template must not repeat the
+  // brand, or the default reads "KHUB — KHUB AI Gateway...".
+  assert.match(layout, /\$\{instanceName\} — AI Gateway for Multi-Provider LLMs/);
   assert.match(layout, /KHUB is an AI gateway for multi-provider LLMs/);
   const iconUrls = [...layout.matchAll(/url:\s*"(\/[^"]+)"/g)].map((match) => match[1]);
   for (const url of iconUrls) {

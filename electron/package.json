@@ -1,7 +1,7 @@
 {
   "name": "omniroute-desktop",
   "version": "3.8.53",
-  "description": "OmniRoute Desktop Application",
+  "description": "KHUB — unified AI gateway for 380 providers with automatic failover.",
   "main": "main.js",
   "author": {
     "name": "OmniRoute Team",
