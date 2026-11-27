@@ -22,6 +22,8 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { parseCooldownUntilMs } from "../../src/lib/resilience/persistedResilienceCodec.ts";
+
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-catalog-runtime-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
 
@@ -124,9 +126,18 @@ test("a cooldown write refreshes list, raw, and by-ID connection caches", async 
   );
   const byIdRow = await readCache.getCachedProviderConnectionById(connectionId);
 
-  assert.equal(Number(listRow.rateLimitedUntil), rateLimitedUntil);
-  assert.equal(Number(rawRow.rateLimitedUntil), rateLimitedUntil);
-  assert.equal(Number(byIdRow?.rateLimitedUntil), rateLimitedUntil);
+  assert.equal(
+    parseCooldownUntilMs(listRow.rateLimitedUntil as string | number | null),
+    rateLimitedUntil
+  );
+  assert.equal(
+    parseCooldownUntilMs(rawRow.rateLimitedUntil as string | number | null),
+    rateLimitedUntil
+  );
+  assert.equal(
+    parseCooldownUntilMs(byIdRow?.rateLimitedUntil as string | number | null),
+    rateLimitedUntil
+  );
   await assertCatalogStillWarm();
 });
 

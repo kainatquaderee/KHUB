@@ -4,16 +4,17 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { parseCooldownUntilMs } from "../../src/lib/resilience/persistedResilienceCodec.ts";
+
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-db-ratelimit-guard-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
 
-const core = await import("../../src/lib/db/core.ts") as typeof import("../../src/lib/db/core.ts");
-const providersDb = await import("../../src/lib/db/providers.ts") as typeof import("../../src/lib/db/providers.ts");
-const {
-  setConnectionRateLimitUntil,
-  clearConnectionRateLimit,
-  isConnectionRateLimited,
-} = providersDb;
+const core =
+  (await import("../../src/lib/db/core.ts")) as typeof import("../../src/lib/db/core.ts");
+const providersDb =
+  (await import("../../src/lib/db/providers.ts")) as typeof import("../../src/lib/db/providers.ts");
+const { setConnectionRateLimitUntil, clearConnectionRateLimit, isConnectionRateLimited } =
+  providersDb;
 
 function readRateLimitedUntil(connectionId: string): unknown {
   const db = (
@@ -25,9 +26,10 @@ function readRateLimitedUntil(connectionId: string): unknown {
       };
     }
   ).getDbInstance();
-  return db
-    .prepare("SELECT rate_limited_until FROM provider_connections WHERE id = ?")
-    .get(connectionId)?.rate_limited_until ?? null;
+  return (
+    db.prepare("SELECT rate_limited_until FROM provider_connections WHERE id = ?").get(connectionId)
+      ?.rate_limited_until ?? null
+  );
 }
 
 async function resetStorage() {
@@ -96,7 +98,7 @@ test("writes future timestamps", async () => {
   const id = await seedConnection();
   const until = Date.now() + 60_000;
   setConnectionRateLimitUntil(id, until);
-  assert.equal(Number(readRateLimitedUntil(id)), until);
+  assert.equal(parseCooldownUntilMs(readRateLimitedUntil(id) as string | number | null), until);
   assert.equal(isConnectionRateLimited(id), true);
 });
 
@@ -113,7 +115,7 @@ test("expired write does not overwrite a live row (future preserved)", async () 
   const future = Date.now() + 60_000;
   setConnectionRateLimitUntil(id, future);
   setConnectionRateLimitUntil(id, Date.now() - 1000);
-  assert.equal(Number(readRateLimitedUntil(id)), future);
+  assert.equal(parseCooldownUntilMs(readRateLimitedUntil(id) as string | number | null), future);
   assert.equal(isConnectionRateLimited(id), true);
 });
 
