@@ -13,10 +13,9 @@ import { DEFAULT_LOCALE, LOCALES, LOCALE_COOKIE } from "@/i18n/config";
 import { OmniRouteLockup } from "@/shared/components/OmniRouteLogo";
 import {
   DEFAULT_APPEARANCE_PALETTE,
-  EDITIONS_APPEARANCE_VALUE,
-  normalizeAppearancePalette,
   type AppearancePalette,
 } from "@/shared/constants/appearancePalette";
+import { ciAppearanceValue, isForcedDarkPalette, skinValue } from "@/shared/constants/themeCatalog";
 
 /**
  * Global Error Page — FASE-04 Error Handling
@@ -65,17 +64,19 @@ function getCookieLocale() {
   return LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
 }
 
-/** Same resolution as THEME_BOOT_SCRIPT (persisted store → system; palette → Editions). */
+/** Same resolution as THEME_BOOT_SCRIPT (persisted store → system, aliases → canonical, forced dark wins). */
 function getStoredAppearance(): { dark: boolean; palette: AppearancePalette } {
   try {
     const stored = localStorage.getItem("theme");
     const parsed = stored ? JSON.parse(stored) : null;
     const theme = parsed?.state?.theme || "system";
+    const palette = skinValue(parsed?.state?.palette);
     return {
       dark:
+        isForcedDarkPalette(palette) ||
         theme === "dark" ||
         (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches),
-      palette: normalizeAppearancePalette(parsed?.state?.palette),
+      palette,
     };
   } catch {
     return { dark: false, palette: DEFAULT_APPEARANCE_PALETTE };
@@ -179,7 +180,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       lang={locale}
       className={dark ? "ci-theme dark" : "ci-theme"}
       data-theme={dark ? "dark" : "light"}
-      data-ci-appearance={palette === "classic" ? undefined : EDITIONS_APPEARANCE_VALUE}
+      data-ci-appearance={ciAppearanceValue(palette) ?? undefined}
+      data-khub-skin={palette}
       style={{ colorScheme: dark ? "dark" : "light" }}
       suppressHydrationWarning
     >

@@ -142,6 +142,63 @@ test("resolveThemeColor: palette × theme × meta media → the right kit backgr
   );
 });
 
+test("every catalogue palette and alias has a browser-chrome colour; Accessibility is always black", async () => {
+  const { resolveThemeColor } = await import("../../src/shared/utils/themeColorMeta.ts");
+  const { PAGE_BACKGROUND_BY_PALETTE } =
+    await import("../../src/shared/constants/pwaThemeColors.ts");
+  const { PALETTE_ALIASES } = await import("../../src/shared/constants/appearancePalette.ts");
+  const { THEME_CATALOG } = await import("../../src/shared/constants/themeCatalog.ts");
+  const LIGHT = "(prefers-color-scheme: light)";
+  const DARK = "(prefers-color-scheme: dark)";
+  for (const entry of THEME_CATALOG) {
+    const bg = PAGE_BACKGROUND_BY_PALETTE[entry.id];
+    for (const systemDark of [false, true]) {
+      for (const media of [LIGHT, DARK, null]) {
+        if (entry.forcedDark) {
+          assert.equal(
+            resolveThemeColor({ palette: entry.id, theme: "light", media, systemDark }),
+            bg.dark,
+            `${entry.id} forces dark regardless of the stored mode`
+          );
+        } else {
+          assert.equal(
+            resolveThemeColor({ palette: entry.id, theme: "light", media, systemDark }),
+            bg.light
+          );
+          assert.equal(
+            resolveThemeColor({ palette: entry.id, theme: "dark", media, systemDark }),
+            bg.dark
+          );
+        }
+      }
+      if (!entry.forcedDark) {
+        assert.equal(
+          resolveThemeColor({ palette: entry.id, theme: "system", media: LIGHT, systemDark }),
+          bg.light
+        );
+        assert.equal(
+          resolveThemeColor({ palette: entry.id, theme: "system", media: DARK, systemDark }),
+          bg.dark
+        );
+      }
+    }
+  }
+  for (const [alias, canonical] of Object.entries(PALETTE_ALIASES)) {
+    const bg = PAGE_BACKGROUND_BY_PALETTE[canonical];
+    for (const media of [LIGHT, DARK]) {
+      assert.equal(
+        resolveThemeColor({ palette: alias, theme: "dark", media, systemDark: false }),
+        bg.dark,
+        `${alias} resolves to ${canonical}`
+      );
+    }
+  }
+  assert.equal(
+    resolveThemeColor({ palette: "khub-signature", theme: "dark", media: DARK, systemDark: true }),
+    PAGE_BACKGROUND_BY_PALETTE.editions.dark
+  );
+});
+
 test("the web manifest uses the Editions background, not the pre-kit #0b0f1a", async () => {
   const { default: manifest } = await import("../../src/app/manifest.ts");
   const m = manifest();

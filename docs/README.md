@@ -40,6 +40,8 @@ Simple guides for using OmniRoute — no technical background needed.
 - [ELECTRON_GUIDE.md](guides/ELECTRON_GUIDE.md) — desktop (Electron) builds.
 - [TERMUX_GUIDE.md](guides/TERMUX_GUIDE.md) — running on Android via Termux.
 - [PWA_GUIDE.md](guides/PWA_GUIDE.md) — installing the dashboard as a PWA.
+- [KHUB_THEMES.md](guides/KHUB_THEMES.md) — KHUB 14-palette catalogue, aliases, high-contrast behavior.
+- [KHUB_PARODY_THEMES.md](guides/KHUB_PARODY_THEMES.md) — original-asset rule for the three parody skins.
 - [REMOTE-MODE.md](guides/REMOTE-MODE.md) — exposing OmniRoute remotely + scoped tokens.
 - [HEADLESS.md](guides/HEADLESS.md) — headless mode: proxy engine only, no dashboard (`OMNIROUTE_HEADLESS=1` / `serve --headless`).
 - [CLI-INTEGRATIONS.md](guides/CLI-INTEGRATIONS.md) — master table of `setup-*` CLI integrations.

@@ -8,24 +8,23 @@ const { default: OmniRouteLogo, OmniRouteLockup } =
 
 afterEach(() => cleanup());
 
-describe("brand wrappers → kit ProductIcon / ProductLockup", () => {
-  it("OmniRouteLogo keeps the size/className API and renders the kit product glyph", () => {
+describe("brand wrappers → KHUB path-only renderer", () => {
+  it("OmniRouteLogo keeps the size/className API and renders the KHUB glyph", () => {
     const { container } = render(<OmniRouteLogo size={22} className="x" />);
     const svg = container.querySelector("svg")!;
-    expect(svg.classList.contains("ci-keak-product-icon")).toBe(true);
     expect(svg.classList.contains("x")).toBe(true);
     expect(svg.getAttribute("width")).toBe("22");
-    // The kit rule `.ci-keak-product-icon { width: 2em; height: 2em }` (@layer components) beats
-    // SVG presentation attributes in a browser, so the size must also travel as inline style.
+    expect(svg.getAttribute("viewBox")).toBe("0 0 64 64");
     expect(svg.style.width).toBe("22px");
     expect(svg.style.height).toBe("22px");
     expect(svg.getAttribute("aria-hidden")).toBe("true");
-    expect(container.querySelector("image, [href^='/brand/']")).toBeNull();
+    expect(container.querySelectorAll("path").length).toBeGreaterThan(0);
+    expect(container.querySelector("image, [href^='/brand/'], text, circle, ellipse")).toBeNull();
   });
 
-  it("OmniRouteLockup renders the Keak OmniRoute lockup with one accessible name", () => {
+  it("OmniRouteLockup renders the KHUB wordmark with one accessible name", () => {
     render(<OmniRouteLockup />);
-    expect(screen.getByRole("img", { name: "Keak OmniRoute" })).not.toBeNull();
+    expect(screen.getByRole("img", { name: "KHUB" })).not.toBeNull();
   });
 
   it("OmniRouteLockup honours white-label name/logo", () => {
@@ -36,6 +35,6 @@ describe("brand wrappers → kit ProductIcon / ProductLockup", () => {
 
   it("OmniRouteLockup never yields an empty accessible name for an empty white-label name", () => {
     render(<OmniRouteLockup name="" logoSrc="data:image/png;base64,AAAA" />);
-    expect(screen.getByRole("img", { name: "OmniRoute" })).not.toBeNull();
+    expect(screen.getByRole("img", { name: "KHUB" })).not.toBeNull();
   });
 });

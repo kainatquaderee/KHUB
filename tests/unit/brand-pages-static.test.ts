@@ -32,10 +32,11 @@ test("standalone pages use the Keak lockup instead of the gradient hub glyph", (
   }
 });
 
-test("the logo wrappers import the kit brand module, not the package barrel", () => {
+test("the logo wrappers import the local KHUB brand module, not the package barrel", () => {
   // The barrel evaluates all kit modules (Radix, charts…) in every importer of the logo;
-  // in vitest that alone pushed the Sidebar import past the 5 s test timeout.
+  // in vitest that alone pushed the Sidebar import past the 5 s test timeout. The KHUB
+  // adapter now deep-imports its own path-only geometry source instead.
   const src = read("src/shared/components/OmniRouteLogo.tsx");
-  assert.match(src, /from "@omniroute\/ui-kit\/keak-brand"/);
+  assert.match(src, /from "\.\.\/brand\/khubMark"/);
   assert.doesNotMatch(src, /from "@omniroute\/ui-kit"/);
 });

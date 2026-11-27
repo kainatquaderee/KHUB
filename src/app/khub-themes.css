@@ -1,0 +1,594 @@
+/* KHUB appearance skins — app-layer companion to the vendored CI UI Kit.
+ * Imported by src/app/globals.css after the kit, so these selectors win without touching the kit.
+ * One light and one dark token block per canonical catalogue ID
+ * (src/shared/constants/themeCatalog.ts); tests/unit/appearance-catalog.test.ts verifies the mirror.
+ * Only local font stacks and inline hex values: no remote CSS/font fetch at runtime.
+ */
+
+/* KHUB Editions — Signature */
+html:root:not([data-theme="dark"])[data-khub-skin="editions"] {
+  --khub-background: #f3f1e9;
+  --khub-text: #20211c;
+  --khub-text-secondary: #626459;
+  --khub-control-text: #20211c;
+  --khub-control-border: #626459;
+  --khub-focus: #99562f;
+  --khub-accent-light: #99562f;
+  --khub-accent-dark: #e5ac82;
+  --khub-accent: #99562f;
+  --khub-accent-ink: #f3f1e9;
+  --khub-surface: #ebe9e1;
+  --khub-surface-subtle: #e0ded7;
+  --khub-surface-muted: #d5d4cc;
+  --khub-font-display: var(--ci-font-display);
+}
+
+html:root[data-theme="dark"][data-khub-skin="editions"] {
+  --khub-background: #11120f;
+  --khub-text: #f2f0e8;
+  --khub-text-secondary: #a5a69b;
+  --khub-control-text: #f2f0e8;
+  --khub-control-border: #a5a69b;
+  --khub-focus: #e5ac82;
+  --khub-accent-light: #99562f;
+  --khub-accent-dark: #e5ac82;
+  --khub-accent: #e5ac82;
+  --khub-accent-ink: #11120f;
+  --khub-surface: #1a1b18;
+  --khub-surface-subtle: #252623;
+  --khub-surface-muted: #31312d;
+  --khub-font-display: var(--ci-font-display);
+}
+
+/* Classic — Signature */
+html:root:not([data-theme="dark"])[data-khub-skin="classic"] {
+  --khub-background: #fbfbf8;
+  --khub-text: #031a1b;
+  --khub-text-secondary: #575f5f;
+  --khub-control-text: #040d10;
+  --khub-control-border: #575f5f;
+  --khub-focus: #4d5c00;
+  --khub-accent-light: #4d5c00;
+  --khub-accent-dark: #d8ff00;
+  --khub-accent: #4d5c00;
+  --khub-accent-ink: #fbfbf8;
+  --khub-surface: #f1f2ef;
+  --khub-surface-subtle: #e5e7e4;
+  --khub-surface-muted: #d8dcd9;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="classic"] {
+  --khub-background: #040d10;
+  --khub-text: #f1f7f7;
+  --khub-text-secondary: #9ca39f;
+  --khub-control-text: #f1f7f7;
+  --khub-control-border: #9ca39f;
+  --khub-focus: #d8ff00;
+  --khub-accent-light: #4d5c00;
+  --khub-accent-dark: #d8ff00;
+  --khub-accent: #d8ff00;
+  --khub-accent-ink: #040d10;
+  --khub-surface: #0d1619;
+  --khub-surface-subtle: #192225;
+  --khub-surface-muted: #252e30;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Nord — Atmospheric */
+html:root:not([data-theme="dark"])[data-khub-skin="nord"] {
+  --khub-background: #f4f7fb;
+  --khub-text: #2e3540;
+  --khub-text-secondary: #4c5a6b;
+  --khub-control-text: #263746;
+  --khub-control-border: #3d5a80;
+  --khub-focus: #3d5a80;
+  --khub-accent-light: #3d5a80;
+  --khub-accent-dark: #88c0d0;
+  --khub-accent: #3d5a80;
+  --khub-accent-ink: #f4f7fb;
+  --khub-surface: #eceff4;
+  --khub-surface-subtle: #e2e6ea;
+  --khub-surface-muted: #d8dce1;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="nord"] {
+  --khub-background: #242936;
+  --khub-text: #e5edf8;
+  --khub-text-secondary: #b8c7dc;
+  --khub-control-text: #e5edf8;
+  --khub-control-border: #8fabc7;
+  --khub-focus: #ffffff;
+  --khub-accent-light: #3d5a80;
+  --khub-accent-dark: #88c0d0;
+  --khub-accent: #88c0d0;
+  --khub-accent-ink: #242936;
+  --khub-surface: #2c313e;
+  --khub-surface-subtle: #353b47;
+  --khub-surface-muted: #3f4451;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Nebula — Atmospheric */
+html:root:not([data-theme="dark"])[data-khub-skin="nebula"] {
+  --khub-background: #f7f4fb;
+  --khub-text: #2a2038;
+  --khub-text-secondary: #574a68;
+  --khub-control-text: #372849;
+  --khub-control-border: #6a4c93;
+  --khub-focus: #5b3a8e;
+  --khub-accent-light: #6a4c93;
+  --khub-accent-dark: #c9a7ff;
+  --khub-accent: #6a4c93;
+  --khub-accent-ink: #f7f4fb;
+  --khub-surface: #efecf3;
+  --khub-surface-subtle: #e5e1e9;
+  --khub-surface-muted: #dad6e0;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="nebula"] {
+  --khub-background: #171326;
+  --khub-text: #f1eaff;
+  --khub-text-secondary: #c6b8e0;
+  --khub-control-text: #f1eaff;
+  --khub-control-border: #9d8ec7;
+  --khub-focus: #e0d4ff;
+  --khub-accent-light: #6a4c93;
+  --khub-accent-dark: #c9a7ff;
+  --khub-accent: #c9a7ff;
+  --khub-accent-ink: #171326;
+  --khub-surface: #201c2f;
+  --khub-surface-subtle: #2b263a;
+  --khub-surface-muted: #363144;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Aurora — Atmospheric */
+html:root:not([data-theme="dark"])[data-khub-skin="aurora"] {
+  --khub-background: #f2f8f4;
+  --khub-text: #173026;
+  --khub-text-secondary: #46685a;
+  --khub-control-text: #1b3b2e;
+  --khub-control-border: #3c7a5a;
+  --khub-focus: #256f4f;
+  --khub-accent-light: #256f4f;
+  --khub-accent-dark: #7be0ad;
+  --khub-accent: #256f4f;
+  --khub-accent-ink: #f2f8f4;
+  --khub-surface: #e9f0ec;
+  --khub-surface-subtle: #dee6e1;
+  --khub-surface-muted: #d3dcd7;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="aurora"] {
+  --khub-background: #0d1b16;
+  --khub-text: #e4f8ed;
+  --khub-text-secondary: #b3d9c5;
+  --khub-control-text: #e4f8ed;
+  --khub-control-border: #7bc9a2;
+  --khub-focus: #b6ffd6;
+  --khub-accent-light: #256f4f;
+  --khub-accent-dark: #7be0ad;
+  --khub-accent: #7be0ad;
+  --khub-accent-ink: #0d1b16;
+  --khub-surface: #16241f;
+  --khub-surface-subtle: #202f29;
+  --khub-surface-muted: #2b3a34;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Gutgub — Parody */
+html:root:not([data-theme="dark"])[data-khub-skin="gutgub"] {
+  --khub-background: #f6f8fa;
+  --khub-text: #1f2328;
+  --khub-text-secondary: #57606a;
+  --khub-control-text: #24292f;
+  --khub-control-border: #57606a;
+  --khub-focus: #0969da;
+  --khub-accent-light: #0550ae;
+  --khub-accent-dark: #58a6ff;
+  --khub-accent: #0550ae;
+  --khub-accent-ink: #f6f8fa;
+  --khub-surface: #edeff2;
+  --khub-surface-subtle: #e3e5e7;
+  --khub-surface-muted: #d8dadd;
+  --khub-font-display: var(--ci-font-code);
+}
+
+html:root[data-theme="dark"][data-khub-skin="gutgub"] {
+  --khub-background: #0d1117;
+  --khub-text: #f0f6fc;
+  --khub-text-secondary: #c9d1d9;
+  --khub-control-text: #f0f6fc;
+  --khub-control-border: #8b949e;
+  --khub-focus: #79c0ff;
+  --khub-accent-light: #0550ae;
+  --khub-accent-dark: #58a6ff;
+  --khub-accent: #58a6ff;
+  --khub-accent-ink: #0d1117;
+  --khub-surface: #161a20;
+  --khub-surface-subtle: #21262c;
+  --khub-surface-muted: #2d3137;
+  --khub-font-display: var(--ci-font-code);
+}
+
+/* Youyou — Parody */
+html:root:not([data-theme="dark"])[data-khub-skin="youyou"] {
+  --khub-background: #ffffff;
+  --khub-text: #0f0f0f;
+  --khub-text-secondary: #606060;
+  --khub-control-text: #212121;
+  --khub-control-border: #767676;
+  --khub-focus: #b00020;
+  --khub-accent-light: #c4302b;
+  --khub-accent-dark: #ff6b6b;
+  --khub-accent: #c4302b;
+  --khub-accent-ink: #ffffff;
+  --khub-surface: #f5f5f5;
+  --khub-surface-subtle: #e9e9e9;
+  --khub-surface-muted: #dddddd;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="youyou"] {
+  --khub-background: #0f0f0f;
+  --khub-text: #f1f1f1;
+  --khub-text-secondary: #d6d6d6;
+  --khub-control-text: #ffffff;
+  --khub-control-border: #a8a8a8;
+  --khub-focus: #ffffff;
+  --khub-accent-light: #c4302b;
+  --khub-accent-dark: #ff6b6b;
+  --khub-accent: #ff6b6b;
+  --khub-accent-ink: #0f0f0f;
+  --khub-surface: #181818;
+  --khub-surface-subtle: #232323;
+  --khub-surface-muted: #2f2f2f;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Gutlib — Parody */
+html:root:not([data-theme="dark"])[data-khub-skin="gutlib"] {
+  --khub-background: #f9f7f5;
+  --khub-text: #25232a;
+  --khub-text-secondary: #5d5766;
+  --khub-control-text: #2e2a35;
+  --khub-control-border: #6f496f;
+  --khub-focus: #7d3c98;
+  --khub-accent-light: #843779;
+  --khub-accent-dark: #c592d8;
+  --khub-accent: #843779;
+  --khub-accent-ink: #f9f7f5;
+  --khub-surface: #f1efed;
+  --khub-surface-subtle: #e6e4e3;
+  --khub-surface-muted: #dbd9d9;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="gutlib"] {
+  --khub-background: #17141d;
+  --khub-text: #f4effa;
+  --khub-text-secondary: #c9bcd6;
+  --khub-control-text: #f4effa;
+  --khub-control-border: #a48cb6;
+  --khub-focus: #e0c8ff;
+  --khub-accent-light: #843779;
+  --khub-accent-dark: #c592d8;
+  --khub-accent: #c592d8;
+  --khub-accent-ink: #17141d;
+  --khub-surface: #201d26;
+  --khub-surface-subtle: #2b2831;
+  --khub-surface-muted: #36333c;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Synthwave — Creative */
+html:root:not([data-theme="dark"])[data-khub-skin="synthwave"] {
+  --khub-background: #fdf5ff;
+  --khub-text: #2a1740;
+  --khub-text-secondary: #623a7c;
+  --khub-control-text: #361a50;
+  --khub-control-border: #8a2be2;
+  --khub-focus: #7b2cbf;
+  --khub-accent-light: #7b2cbf;
+  --khub-accent-dark: #ff71ce;
+  --khub-accent: #7b2cbf;
+  --khub-accent-ink: #fdf5ff;
+  --khub-surface: #f5ecf7;
+  --khub-surface-subtle: #eae1ee;
+  --khub-surface-muted: #dfd6e4;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="synthwave"] {
+  --khub-background: #160a24;
+  --khub-text: #f7e9ff;
+  --khub-text-secondary: #dcb8f6;
+  --khub-control-text: #f7e9ff;
+  --khub-control-border: #b388e8;
+  --khub-focus: #ff71ce;
+  --khub-accent-light: #7b2cbf;
+  --khub-accent-dark: #ff71ce;
+  --khub-accent: #ff71ce;
+  --khub-accent-ink: #160a24;
+  --khub-surface: #1f132d;
+  --khub-surface-subtle: #2a1e38;
+  --khub-surface-muted: #362943;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Terminal — Creative */
+html:root:not([data-theme="dark"])[data-khub-skin="terminal"] {
+  --khub-background: #f5f7f0;
+  --khub-text: #18321d;
+  --khub-text-secondary: #456347;
+  --khub-control-text: #1d3b2e;
+  --khub-control-border: #3f6b45;
+  --khub-focus: #246b2b;
+  --khub-accent-light: #137a2c;
+  --khub-accent-dark: #62d97a;
+  --khub-accent: #137a2c;
+  --khub-accent-ink: #f5f7f0;
+  --khub-surface: #ecefe8;
+  --khub-surface-subtle: #e1e5dd;
+  --khub-surface-muted: #d6dbd2;
+  --khub-font-display: var(--ci-font-code);
+}
+
+html:root[data-theme="dark"][data-khub-skin="terminal"] {
+  --khub-background: #050c06;
+  --khub-text: #d8ffd8;
+  --khub-text-secondary: #a8d8a8;
+  --khub-control-text: #d8ffd8;
+  --khub-control-border: #62c776;
+  --khub-focus: #7dff9a;
+  --khub-accent-light: #137a2c;
+  --khub-accent-dark: #62d97a;
+  --khub-accent: #62d97a;
+  --khub-accent-ink: #050c06;
+  --khub-surface: #0d160e;
+  --khub-surface-subtle: #182219;
+  --khub-surface-muted: #232e23;
+  --khub-font-display: var(--ci-font-code);
+}
+
+/* Paper Ink — Creative */
+html:root:not([data-theme="dark"])[data-khub-skin="paper-ink"] {
+  --khub-background: #f7f3e8;
+  --khub-text: #1e1c17;
+  --khub-text-secondary: #585247;
+  --khub-control-text: #242019;
+  --khub-control-border: #6b6050;
+  --khub-focus: #6b5836;
+  --khub-accent-light: #8a5a2b;
+  --khub-accent-dark: #d8b47a;
+  --khub-accent: #8a5a2b;
+  --khub-accent-ink: #f7f3e8;
+  --khub-surface: #eeeae0;
+  --khub-surface-subtle: #e3e0d5;
+  --khub-surface-muted: #d9d5cb;
+  --khub-font-display: Georgia, Cambria, "Times New Roman", serif;
+}
+
+html:root[data-theme="dark"][data-khub-skin="paper-ink"] {
+  --khub-background: #16130f;
+  --khub-text: #f4efe3;
+  --khub-text-secondary: #cdc4b2;
+  --khub-control-text: #f4efe3;
+  --khub-control-border: #a89a83;
+  --khub-focus: #e2c99b;
+  --khub-accent-light: #8a5a2b;
+  --khub-accent-dark: #d8b47a;
+  --khub-accent: #d8b47a;
+  --khub-accent-ink: #16130f;
+  --khub-surface: #1f1c17;
+  --khub-surface-subtle: #2a2722;
+  --khub-surface-muted: #35322d;
+  --khub-font-display: Georgia, Cambria, "Times New Roman", serif;
+}
+
+/* Sunset FM — Creative */
+html:root:not([data-theme="dark"])[data-khub-skin="sunset-fm"] {
+  --khub-background: #fff7ee;
+  --khub-text: #341d13;
+  --khub-text-secondary: #714e3b;
+  --khub-control-text: #3d2418;
+  --khub-control-border: #a3552d;
+  --khub-focus: #a04000;
+  --khub-accent-light: #c2410c;
+  --khub-accent-dark: #ff9d66;
+  --khub-accent: #c2410c;
+  --khub-accent-ink: #fff7ee;
+  --khub-surface: #f7eee5;
+  --khub-surface-subtle: #ede3da;
+  --khub-surface-muted: #e3d8cf;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="sunset-fm"] {
+  --khub-background: #1c100a;
+  --khub-text: #fff1e6;
+  --khub-text-secondary: #e0bda5;
+  --khub-control-text: #fff1e6;
+  --khub-control-border: #db9466;
+  --khub-focus: #ffb27a;
+  --khub-accent-light: #c2410c;
+  --khub-accent-dark: #ff9d66;
+  --khub-accent: #ff9d66;
+  --khub-accent-ink: #1c100a;
+  --khub-surface: #251913;
+  --khub-surface-subtle: #30241e;
+  --khub-surface-muted: #3c3029;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+/* Cyber Lime — Creative */
+html:root:not([data-theme="dark"])[data-khub-skin="cyber-lime"] {
+  --khub-background: #f7fbed;
+  --khub-text: #16220c;
+  --khub-text-secondary: #4c5c30;
+  --khub-control-text: #1d2e0c;
+  --khub-control-border: #607a29;
+  --khub-focus: #4c6b0f;
+  --khub-accent-light: #4d6b00;
+  --khub-accent-dark: #c2e600;
+  --khub-accent: #4d6b00;
+  --khub-accent-ink: #f7fbed;
+  --khub-surface: #eef2e4;
+  --khub-surface-subtle: #e3e7d9;
+  --khub-surface-muted: #d8ddce;
+  --khub-font-display: var(--ci-font-code);
+}
+
+html:root[data-theme="dark"][data-khub-skin="cyber-lime"] {
+  --khub-background: #0b1005;
+  --khub-text: #efffdb;
+  --khub-text-secondary: #c2d99c;
+  --khub-control-text: #efffdb;
+  --khub-control-border: #a7d34f;
+  --khub-focus: #d8ff00;
+  --khub-accent-light: #4d6b00;
+  --khub-accent-dark: #c2e600;
+  --khub-accent: #c2e600;
+  --khub-accent-ink: #0b1005;
+  --khub-surface: #141a0e;
+  --khub-surface-subtle: #202618;
+  --khub-surface-muted: #2b3123;
+  --khub-font-display: var(--ci-font-code);
+}
+
+/* High Contrast Dark — Accessibility (forced dark) */
+html:root:not([data-theme="dark"])[data-khub-skin="high-contrast-dark"] {
+  --khub-background: #000000;
+  --khub-text: #ffffff;
+  --khub-text-secondary: #d9f2ff;
+  --khub-control-text: #ffffff;
+  --khub-control-border: #00ffff;
+  --khub-focus: #ffffff;
+  --khub-accent-light: #00ffff;
+  --khub-accent-dark: #b6ff00;
+  --khub-accent: #00ffff;
+  --khub-accent-ink: #000000;
+  --khub-surface: #000000;
+  --khub-surface-subtle: #000000;
+  --khub-surface-muted: #000000;
+  --khub-font-display: var(--ci-font-ui);
+}
+
+html:root[data-theme="dark"][data-khub-skin="high-contrast-dark"] {
+  --khub-background: #000000;
+  --khub-text: #ffffff;
+  --khub-text-secondary: #d9f2ff;
+  --khub-control-text: #ffffff;
+  --khub-control-border: #00ffff;
+  --khub-focus: #ffffff;
+  --khub-accent-light: #00ffff;
+  --khub-accent-dark: #b6ff00;
+  --khub-accent: #b6ff00;
+  --khub-accent-ink: #000000;
+  --khub-surface: #000000;
+  --khub-surface-subtle: #000000;
+  --khub-surface-muted: #000000;
+  --khub-font-display: var(--ci-font-ui);
+}
+/* One bridge for every skin: the per-skin blocks above only declare KHUB tokens. */
+html:root[data-khub-skin] {
+  --color-primary: var(--khub-accent);
+  --color-primary-hover: var(--khub-accent);
+  --color-primary-ink: var(--khub-text);
+  --color-accent: var(--khub-accent);
+  --color-accent-light: var(--khub-accent-light);
+  --color-bg: var(--khub-background);
+  --color-bg-alt: var(--khub-surface-subtle);
+  --color-bg-subtle: var(--khub-surface-subtle);
+  --color-surface: var(--khub-surface);
+  --color-card: var(--khub-surface);
+  --color-border: var(--khub-control-border);
+  --color-border-strong: var(--khub-control-border);
+  --color-text-main: var(--khub-text);
+  --color-text-primary: var(--khub-text);
+  --color-text-muted: var(--khub-text-secondary);
+  --color-heading: var(--khub-text);
+}
+
+/* Editions and Classic keep their complete token sets from the vendored kit. */
+html:root[data-khub-skin]:not([data-khub-skin="editions"]):not([data-khub-skin="classic"]) {
+  --ci-color-background: var(--khub-background);
+  --ci-color-canvas: var(--khub-background);
+  --ci-color-surface: var(--khub-surface);
+  --ci-color-surface-subtle: var(--khub-surface-subtle);
+  --ci-color-surface-muted: var(--khub-surface-muted);
+  --ci-color-foreground: var(--khub-text);
+  --ci-color-text: var(--khub-text);
+  --ci-color-heading: var(--khub-text);
+  --ci-color-text-muted: var(--khub-text-secondary);
+  --ci-color-text-subtle: var(--khub-text-secondary);
+  --ci-color-accent: var(--khub-accent);
+  --ci-color-accent-hover: var(--khub-accent);
+  --ci-color-accent-active: var(--khub-accent);
+  --ci-color-accent-foreground: var(--khub-accent-ink);
+  --ci-color-accent-ink: var(--khub-accent);
+  --ci-color-control-active-bg: var(--khub-accent);
+  --ci-color-control-active-fg: var(--khub-accent-ink);
+  --ci-color-border-subtle: var(--khub-control-border);
+  --ci-color-border: var(--khub-control-border);
+  --ci-color-border-strong: var(--khub-control-border);
+  --ci-color-focus: var(--khub-focus);
+  --ci-color-focus-ring: var(--khub-focus);
+  --ci-color-selection: var(--khub-surface-muted);
+  --ci-color-selection-foreground: var(--khub-text);
+}
+
+/* Branded default: copper accent, the kit's display face and a short motif under page headings. */
+html:root[data-khub-skin="editions"] {
+  --khub-motif-color: var(--khub-accent-light);
+  --ci-letter-spacing-display: -0.015em;
+  --ci-page-title-weight: var(--ci-font-weight-medium);
+}
+html:root[data-khub-skin="editions"] :is(.ci-page-title, h1, h2) {
+  font-family: var(--khub-font-display);
+  letter-spacing: -0.015em;
+}
+html:root[data-khub-skin="editions"] :is(.ci-page-title, h1)::after {
+  content: "";
+  display: block;
+  width: 2.25rem;
+  height: 2px;
+  margin-top: 0.25rem;
+  background: var(--khub-motif-color);
+}
+
+/* Accessibility: state is never signalled by opacity, gradients or shadows. Controls get a 2px
+   border and focus a 3px ring, both readable on the black canvas. */
+html:root[data-khub-skin="high-contrast-dark"] {
+  --ci-radius-control: 0;
+  --ci-radius-surface: 0;
+  --shadow-soft: none;
+  --shadow-warm: none;
+  --shadow-elevated: none;
+  --ci-shadow-xs: none;
+  --ci-shadow-sm: none;
+  --ci-shadow-md: none;
+  --ci-shadow-lg: none;
+}
+html:root[data-khub-skin="high-contrast-dark"]
+  :is(a[href], button, input, select, textarea, [role="button"], [role="textbox"]) {
+  border: 2px solid var(--khub-control-border) !important;
+}
+html:root[data-khub-skin="high-contrast-dark"] :focus-visible {
+  outline: 3px solid var(--khub-focus) !important;
+  outline-offset: 2px;
+}
+html:root[data-khub-skin="high-contrast-dark"] :is([disabled], [aria-disabled="true"]) {
+  border-style: dashed !important;
+}
+html:root[data-khub-skin="high-contrast-dark"] *,
+html:root[data-khub-skin="high-contrast-dark"] *::before,
+html:root[data-khub-skin="high-contrast-dark"] *::after {
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}

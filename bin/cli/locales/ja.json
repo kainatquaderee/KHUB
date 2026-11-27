@@ -1,7 +1,7 @@
 {
   "common": {
     "error": "エラー: {message}",
-    "serverOffline": "OmniRouteサーバーはオフラインです。起動: omniroute serve",
+    "serverOffline": "KHUBサーバーはオフラインです。起動: omniroute serve",
     "authRequired": "認証が必要です。OMNIROUTE_API_KEYを設定するか実行してください: omniroute setup",
     "rateLimited": "リクエスト制限を超えました。{seconds}秒後に再試行してください。",
     "timeout": "{ms}ms後にリクエストがタイムアウトしました。",
@@ -15,7 +15,7 @@
     "yesOpt": "確認をスキップ"
   },
   "setup": {
-    "title": "OmniRoute セットアップ",
+    "title": "KHUB セットアップ",
     "passwordPrompt": "管理者パスワード",
     "providerPrompt": "デフォルトプロバイダー（スキップする場合は空欄）",
     "done": "セットアップが完了しました",
@@ -30,7 +30,7 @@
     "opencode": "OpenCode 用の同梱 @omniroute/opencode-plugin をインストールして設定"
   },
   "doctor": {
-    "title": "OmniRoute 診断",
+    "title": "KHUB 診断",
     "dbOk": "データベース: 正常（{path}）",
     "dbMissing": "データベース: 初期化されていません — `omniroute setup` を実行してください",
     "portOk": "ポート {port}: 使用可能",
@@ -82,7 +82,7 @@
       "providerOpt": "プロバイダー名で絞り込む",
       "header": "ID         プロバイダー   名前                     有効期限の状態  テスト状態  クールダウン期限",
       "noData": "利用可能なプロバイダー接続データがありません。",
-      "requiresServer": "providers status を実行するには、OmniRoute サーバーが稼働している必要があります。"
+      "requiresServer": "providers status を実行するには、KHUB サーバーが稼働している必要があります。"
     }
   },
   "keys": {
@@ -90,8 +90,8 @@
     "addDescription": "プロバイダーの API キーを追加または更新する",
     "listDescription": "設定済みのすべての API キーを一覧表示する",
     "removeDescription": "プロバイダーの API キーを削除する",
-    "regenerateDescription": "OmniRoute API キーを再生成する",
-    "revokeDescription": "OmniRoute API キーを失効させる",
+    "regenerateDescription": "KHUB API キーを再生成する",
+    "revokeDescription": "KHUB API キーを失効させる",
     "revealDescription": "マスクされていない API キーの値を表示する",
     "usageDescription": "API キーの最近の使用状況を表示する",
     "usageLimitOpt": "最近のリクエスト数",
@@ -225,7 +225,7 @@
     "noCombo": "一致するコンボが見つかりません。次のコマンドで設定してください: omniroute combo create"
   },
   "chat": {
-    "description": "OmniRoute に単発のチャットプロンプトを送信",
+    "description": "KHUB に単発のチャットプロンプトを送信",
     "file": "ファイルからプロンプトを読み込む",
     "stdin": "標準入力からプロンプトを読み込む",
     "system": "システムプロンプト",
@@ -244,8 +244,8 @@
     }
   },
   "serve": {
-    "description": "OmniRoute サーバーを起動（デフォルトのアクション）",
-    "starting": "ポート {port} で OmniRoute サーバーを起動しています...",
+    "description": "KHUB サーバーを起動（デフォルトのアクション）",
+    "starting": "ポート {port} で KHUB サーバーを起動しています...",
     "ready": "http://localhost:{port} で準備完了",
     "stopping": "サーバーを停止しています（PID {pid}）...",
     "stopped": "サーバーを停止しました。",
@@ -265,7 +265,7 @@
   },
   "backup": {
     "title": "バックアップ",
-    "description": "OmniRoute データのバックアップを作成",
+    "description": "KHUB データのバックアップを作成",
     "creating": "バックアップを作成しています...",
     "done": "バックアップを {path} に保存しました",
     "noFiles": "バックアップするファイルがありません（データベースが初期化されていません）",
@@ -277,7 +277,7 @@
     "noBackups": "バックアップが見つかりません。",
     "notFound": "バックアップが見つかりません: {name}",
     "confirmRestore": "現在のデータを {ts} のバックアップで上書きしますか？",
-    "createDescription": "OmniRoute データのバックアップを作成",
+    "createDescription": "KHUB データのバックアップを作成",
     "nameOpt": "カスタムバックアップ名",
     "cloudOpt": "バックアップをクラウドストレージにアップロード",
     "encryptOpt": "AES-256-GCM でバックアップを暗号化",
@@ -321,7 +321,7 @@
     "clearFailed": "キャッシュのクリアに失敗しました。"
   },
   "redis": {
-    "description": "OmniRouteのキャッシュとクォータ追跡用に、ローカルRedisコンテナー（PodmanまたはDocker）をワンクリックで起動"
+    "description": "KHUBのキャッシュとクォータ追跡用に、ローカルRedisコンテナー（PodmanまたはDocker）をワンクリックで起動"
   },
   "test": {
     "description": "プロバイダー接続をテスト",
@@ -419,7 +419,7 @@
     }
   },
   "policy": {
-    "description": "OmniRouteの認可ポリシーを管理",
+    "description": "KHUBの認可ポリシーを管理",
     "list": {
       "description": "ポリシーを一覧表示",
       "kind": "種別（allow|deny|rate-limit|cost-cap）でフィルタリング",
@@ -456,7 +456,7 @@
     }
   },
   "compression": {
-    "description": "OmniRouteの圧縮パイプラインを設定および確認",
+    "description": "KHUBの圧縮パイプラインを設定および確認",
     "status": {
       "description": "現在の圧縮ステータスと設定を表示"
     },
@@ -510,18 +510,18 @@
     "confirmRotate": "トンネル {type} のURLを更新しますか？（新しいURLが生成されます）"
   },
   "stop": {
-    "description": "OmniRouteサーバーを停止",
+    "description": "KHUBサーバーを停止",
     "stopping": "サーバーを停止しています（PID {pid}）...",
     "stopped": "サーバーを停止しました。",
     "notRunning": "実行中のサーバーはありません。",
     "portFallback": "PIDファイルが見つからないため、ポートベースでの停止を試行しています..."
   },
   "restart": {
-    "description": "OmniRouteサーバーを再起動",
-    "restarting": "OmniRouteサーバーを再起動しています..."
+    "description": "KHUBサーバーを再起動",
+    "restarting": "KHUBサーバーを再起動しています..."
   },
   "dashboard": {
-    "description": "ブラウザーでOmniRouteダッシュボードを開く",
+    "description": "ブラウザーでKHUBダッシュボードを開く",
     "opening": "{url} でダッシュボードを開いています",
     "urlOnly": "ブラウザーを開かずにダッシュボードURLを出力",
     "tui": "対話型TUIダッシュボードを開く（ターミナルUI、7タブ）"
@@ -561,7 +561,7 @@
     }
   },
   "skills": {
-    "description": "OmniRouteスキルを管理（sandbox、builtin、custom、hybrid、skillssh）",
+    "description": "KHUBスキルを管理（sandbox、builtin、custom、hybrid、skillssh）",
     "list": {
       "description": "インストール済みのスキルを一覧表示",
       "type": "タイプで絞り込む（sandbox|custom|builtin|hybrid|skillssh）",
@@ -634,7 +634,7 @@
     }
   },
   "memory": {
-    "description": "OmniRouteの会話メモリ（FTS5 + vector）を管理",
+    "description": "KHUBの会話メモリ（FTS5 + vector）を管理",
     "search": {
       "description": "セマンティッククエリでメモリエントリを検索",
       "type": "メモリタイプでフィルタリング（user|feedback|project|reference）",
@@ -792,7 +792,7 @@
     }
   },
   "webhooks": {
-    "description": "OmniRouteのWebhookを管理",
+    "description": "KHUBのWebhookを管理",
     "events": {
       "description": "利用可能なすべてのWebhookイベントタイプを一覧表示"
     },
@@ -824,14 +824,14 @@
     }
   },
   "program": {
-    "description": "OmniRoute — 自動フォールバック付きスマートAIルーター",
+    "description": "KHUB — 自動フォールバック付きスマートAIルーター",
     "version": "バージョンを表示して終了",
     "output": "出力形式 (table, json, jsonl, csv)",
     "quiet": "重要でない出力を抑制",
     "no_color": "カラー出力を無効化",
     "timeout": "HTTPリクエストタイムアウト（ミリ秒）",
-    "api_key": "OmniRouteサーバーのAPIキー",
-    "base_url": "OmniRouteサーバーのベースURL",
+    "api_key": "KHUBサーバーのAPIキー",
+    "base_url": "KHUBサーバーのベースURL",
     "context": "このコマンドで使用するサーバーコンテキスト/プロファイル",
     "lang": "CLI表示言語を設定（OMNIROUTE_LANGを上書き）"
   },
@@ -1082,7 +1082,7 @@
     }
   },
   "openapi": {
-    "description": "OmniRoute OpenAPI 仕様にアクセスしてテスト",
+    "description": "KHUB OpenAPI 仕様にアクセスしてテスト",
     "dump": {
       "description": "OpenAPI 仕様を stdout またはファイルに出力",
       "format": "出力形式: yaml|json（デフォルト: yaml）",
@@ -1152,7 +1152,7 @@
     }
   },
   "open": {
-    "description": "特定のOmniRouteダッシュボードページをブラウザーで開く",
+    "description": "特定のKHUBダッシュボードページをブラウザーで開く",
     "url": "URLのみを表示し、ブラウザーは開かない"
   },
   "telemetry": {
@@ -1169,7 +1169,7 @@
     }
   },
   "sync": {
-    "description": "OmniRouteインスタンス間で設定を同期",
+    "description": "KHUBインスタンス間で設定を同期",
     "push": {
       "description": "設定をクラウドまたはリモートインスタンスにプッシュ"
     },
@@ -1228,7 +1228,7 @@
     "filter": "レベル（error,warn,info）でフィルタリング — カンマ区切り",
     "lines": "取得する行数",
     "timeout": "接続タイムアウト（ミリ秒）",
-    "baseUrl": "OmniRoute API のベース URL",
+    "baseUrl": "KHUB API のベース URL",
     "requestId": "リクエスト ID でフィルタリング",
     "apiKey": "API キーでフィルタリング",
     "combo": "コンボ名でフィルタリング",
@@ -1244,10 +1244,10 @@
     "description": "システムトレイアイコンを制御します",
     "show": "トレイアイコンを表示します（サーバーが --tray オプション付きで実行されている場合）",
     "hide": "トレイアイコンを非表示にします",
-    "quit": "トレイから OmniRoute を終了します"
+    "quit": "トレイから KHUB を終了します"
   },
   "autostart": {
-    "description": "起動時の OmniRoute の自動起動を管理します（Linux: systemd ユーザーサービス）",
+    "description": "起動時の KHUB の自動起動を管理します（Linux: systemd ユーザーサービス）",
     "enable": "起動時の自動起動を有効にします",
     "disable": "起動時の自動起動を無効にします",
     "toggle": "起動時の自動起動を切り替えます",
@@ -1279,19 +1279,19 @@
     "scaffold": "新しいプラグインのボイラープレートを生成"
   },
   "launch": {
-    "description": "OmniRouteを参照するClaude Codeを起動（ローカルまたはリモート、--profile対応）",
+    "description": "KHUBを参照するClaude Codeを起動（ローカルまたはリモート、--profile対応）",
     "token": "Claudeクライアントが送信するトークン（ANTHROPIC_AUTH_TOKEN）",
-    "notRunning": "ポート{port}でOmniRouteに接続できません。'omniroute serve'で起動してください。",
+    "notRunning": "ポート{port}でKHUBに接続できません。'omniroute serve'で起動してください。",
     "notFound": "'claude' CLIがPATHに見つかりません。"
   },
   "run": {
-    "description": "OmniRoute経由でサポート対象のCLIを起動"
+    "description": "KHUB経由でサポート対象のCLIを起動"
   },
   "setupClaude": {
-    "description": "OmniRouteモデルカタログから~/.claude/profiles用のClaude Codeプロファイルを生成"
+    "description": "KHUBモデルカタログから~/.claude/profiles用のClaude Codeプロファイルを生成"
   },
   "connect": {
-    "description": "リモートOmniRouteサーバーに接続してリモートモードに移行"
+    "description": "リモートKHUBサーバーに接続してリモートモードに移行"
   },
   "tokens": {
     "description": "スコープ付きCLIアクセストークンを管理（リモートモード）"
@@ -1300,10 +1300,10 @@
     "description": "アクティブなサーバーからプロバイダーとモデルを選択し、サポート対象のローカルCLIを設定"
   },
   "launchCodex": {
-    "description": "OmniRouteを参照するCodex CLIを起動（ローカルまたはリモートVPS）"
+    "description": "KHUBを参照するCodex CLIを起動（ローカルまたはリモートVPS）"
   },
   "setupCodex": {
-    "description": "OmniRouteのライブモデルカタログから~/.codexプロファイルファイルを生成"
+    "description": "KHUBのライブモデルカタログから~/.codexプロファイルファイルを生成"
   },
   "packs": {
     "description": "オプションのランタイムパック（ML／ブラウザー自動化）を管理",
@@ -1316,7 +1316,7 @@
     "errUnknown": "不明なパック：{name}",
     "errNoIndex": "パックインデックスが見つかりません。パックのペイロードを格納したディレクトリを--source <dir>で指定してください（デスクトップバンドルではアプリの隣に同梱されています）",
     "installed": "パック「{name}」を{dir}にインストールし、検証しました",
-    "restartHint": "ランタイムがパックを認識するように、OmniRouteサーバー（またはデスクトップアプリ）を再起動してください",
+    "restartHint": "ランタイムがパックを認識するように、KHUBサーバー（またはデスクトップアプリ）を再起動してください",
     "removed": "パック「{name}」を削除しました",
     "notInstalled": "パック「{name}」はインストールされていません",
     "verifyOk": "インストール済みのすべてのパックを検証しました",

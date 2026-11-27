@@ -12,8 +12,10 @@ export function createProgram() {
   const program = new Command();
 
   program
-    .name("omniroute")
-    .description(t("program.description"))
+    .name("khub")
+    .description(
+      "KHUB — smart AI router with automatic fallback (the omniroute command is a compatibility alias)"
+    )
     .version(pkg.version, "-v, --version", t("program.version"))
     .addOption(
       new Option("--output <format>", t("program.output"))

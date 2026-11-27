@@ -6,15 +6,23 @@ import vm from "node:vm";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { THEME_BOOT_SCRIPT } from "../../src/shared/utils/themeBootScript.ts";
+import { THEME_CONFIG } from "../../src/shared/constants/appConfig.ts";
 import {
   APPEARANCE_PALETTES,
   DEFAULT_APPEARANCE_PALETTE,
+  PALETTE_ALIASES,
+  canonicalizeAppearancePalette,
   isAppearancePalette,
   normalizeAppearancePalette,
 } from "../../src/shared/constants/appearancePalette.ts";
 import {
+  CI_APPEARANCE_BY_PALETTE,
+  THEME_CATALOG,
+} from "../../src/shared/constants/themeCatalog.ts";
+import {
   CLASSIC_PAGE_BACKGROUND,
   EDITIONS_PAGE_BACKGROUND,
+  PAGE_BACKGROUND_BY_PALETTE,
 } from "../../src/shared/constants/pwaThemeColors.ts";
 import { resolveThemeColor } from "../../src/shared/utils/themeColorMeta.ts";
 
@@ -49,9 +57,12 @@ function boot(
   const root = win.document.documentElement;
   return {
     appearance: root.getAttribute("data-ci-appearance"),
+    skin: root.dataset.khubSkin,
     theme: root.dataset.theme,
     darkClass: root.classList.contains("dark"),
     colorScheme: root.style.colorScheme,
+    /** The boot script must only read the persisted `theme` store, never write another key. */
+    storageKeys: Array.from({ length: win.localStorage.length }, (_, i) => win.localStorage.key(i)),
     /**
      * The colour the browser uses per media ("" when a tag has none): the first tag in tree order
      * that is not parked (`media="not all"`), as hex. A server tag whose colour changes is parked
@@ -201,7 +212,13 @@ test("theme-color before paint: with no server tag yet the script adds one for t
 });
 
 test("the boot script and resolveThemeColor() agree on every palette × theme × scheme", () => {
-  for (const palette of ["editions", "classic", "violet", undefined]) {
+  for (const palette of [
+    ...APPEARANCE_PALETTES,
+    ...Object.keys(PALETTE_ALIASES),
+    "khub-signature",
+    "violet",
+    undefined,
+  ]) {
     for (const theme of ["light", "dark", "system", "foo", undefined]) {
       for (const prefersDark of [false, true]) {
         const { themeColors } = boot(persisted({ theme, palette }), { prefersDark });
@@ -222,15 +239,16 @@ test("the boot script and resolveThemeColor() agree on every palette × theme ×
   }
 });
 
-test("the boot script embeds the pinned palette backgrounds, not its own literals", () => {
-  for (const hex of [
-    EDITIONS_PAGE_BACKGROUND.light,
-    EDITIONS_PAGE_BACKGROUND.dark,
-    CLASSIC_PAGE_BACKGROUND.light,
-    CLASSIC_PAGE_BACKGROUND.dark,
-  ]) {
+test("the boot script embeds every catalogue background, not its own literals", () => {
+  const backgrounds = new Set(
+    Object.values(PAGE_BACKGROUND_BY_PALETTE).flatMap((bg) => [bg.light, bg.dark])
+  );
+  for (const hex of backgrounds) {
     assert.ok(THEME_BOOT_SCRIPT.includes(JSON.stringify(hex)), `${hex} reaches the boot script`);
   }
+  assert.ok(backgrounds.has(EDITIONS_PAGE_BACKGROUND.light));
+  assert.ok(backgrounds.has(CLASSIC_PAGE_BACKGROUND.dark));
+  assert.ok(backgrounds.has("#000000"), "the Accessibility canvas is in the compile-time map");
   assert.doesNotMatch(read("src/shared/utils/themeBootScript.ts"), /#[0-9a-f]{6}/i);
 });
 
@@ -248,21 +266,30 @@ test("the root layout server-renders Editions and inlines THEME_BOOT_SCRIPT in <
 
 test("the error page outside the root layout applies the stored palette too", () => {
   const globalError = read("src/app/global-error.tsx");
-  assert.match(globalError, /normalizeAppearancePalette\(parsed\?\.state\?\.palette\)/);
-  assert.match(
-    globalError,
-    /data-ci-appearance=\{palette === "classic" \? undefined : EDITIONS_APPEARANCE_VALUE\}/
-  );
+  assert.match(globalError, /skinValue\(parsed\?\.state\?\.palette\)/);
+  assert.match(globalError, /isForcedDarkPalette\(palette\)/);
+  assert.match(globalError, /data-ci-appearance=\{ciAppearanceValue\(palette\) \?\? undefined\}/);
+  assert.match(globalError, /data-khub-skin=\{palette\}/);
 });
 
-test("palette constants: Editions is the default, Classic the only alternative", () => {
-  assert.deepEqual([...APPEARANCE_PALETTES], ["editions", "classic"]);
+test("palette constants: Editions is the branded default, 14 canonical IDs, aliases read-only", () => {
+  assert.deepEqual(
+    [...APPEARANCE_PALETTES],
+    THEME_CATALOG.map((entry) => entry.id)
+  );
+  assert.equal(APPEARANCE_PALETTES.length, 14);
   assert.equal(DEFAULT_APPEARANCE_PALETTE, "editions");
   assert.equal(isAppearancePalette("classic"), true);
+  assert.equal(isAppearancePalette("high-contrast-dark"), true);
   assert.equal(isAppearancePalette("lime"), false);
+  assert.equal(isAppearancePalette("khub-signature"), false);
   assert.equal(normalizeAppearancePalette(undefined), "editions");
   assert.equal(normalizeAppearancePalette("classic"), "classic");
   assert.equal(normalizeAppearancePalette(42), "editions");
+  for (const [alias, canonical] of Object.entries(PALETTE_ALIASES)) {
+    assert.equal(canonicalizeAppearancePalette(alias), canonical);
+    assert.equal(normalizeAppearancePalette(alias), canonical);
+  }
 });
 
 test("the attribute the app sets is the one the vendored kit styles", () => {
@@ -270,4 +297,66 @@ test("the attribute the app sets is the one the vendored kit styles", () => {
   assert.match(editions, /html:root\[data-ci-appearance="editions"\]/);
   assert.match(editions, /html:root\[data-theme="dark"\]\[data-ci-appearance="editions"\]/);
   assert.match(read("packages/ui-kit/src/ci-ui.css"), /@import "\.\/ci-editions\.css";/);
+});
+
+test("pre-paint parity: every canonical skin sets both app-layer hooks", () => {
+  for (const entry of THEME_CATALOG) {
+    const result = boot(persisted({ theme: "light", palette: entry.id }));
+    assert.equal(result.skin, entry.id, `${entry.id} is the canonical data-khub-skin`);
+    assert.equal(
+      result.appearance,
+      CI_APPEARANCE_BY_PALETTE[entry.id],
+      `${entry.id} uses the kit attribute the catalogue declares`
+    );
+    assert.equal(result.darkClass, entry.forcedDark, `${entry.id} forced-dark flag`);
+  }
+  assert.equal(boot(persisted({ theme: "dark", palette: "classic" })).appearance, null);
+  assert.equal(boot(persisted({ theme: "dark", palette: "editions" })).appearance, "editions");
+  for (const entry of THEME_CATALOG.filter((item) => item.id !== "classic")) {
+    assert.equal(boot(persisted({ theme: "dark", palette: entry.id })).appearance, entry.id);
+  }
+});
+
+test("aliases resolve before paint; khub-signature and unknown palettes fail closed to Editions", () => {
+  for (const [alias, canonical] of Object.entries(PALETTE_ALIASES)) {
+    const result = boot(persisted({ theme: "light", palette: alias }));
+    assert.equal(result.skin, canonical, `${alias} resolves to ${canonical}`);
+    assert.equal(result.appearance, CI_APPEARANCE_BY_PALETTE[canonical]);
+  }
+  for (const bad of ["khub-signature", "violet", 42, null]) {
+    const result = boot(persisted({ theme: "dark", palette: bad }));
+    assert.equal(result.skin, "editions");
+    assert.equal(result.appearance, "editions");
+  }
+  assert.equal(boot(persisted({ theme: "light", palette: "khub-signature" })).skin, "editions");
+});
+
+test("High Contrast Dark forces dark before paint, whatever the stored mode or OS preference", () => {
+  for (const theme of ["light", "dark", "system", "foo", undefined]) {
+    for (const prefersDark of [false, true]) {
+      const result = boot(persisted({ theme, palette: "high-contrast-dark" }), { prefersDark });
+      const label = `hc-dark/${theme ?? "unset"}/${prefersDark ? "os-dark" : "os-light"}`;
+      assert.equal(result.theme, "dark", label);
+      assert.equal(result.darkClass, true, label);
+      assert.equal(result.colorScheme, "dark", label);
+      assert.equal(result.skin, "high-contrast-dark", label);
+      assert.equal(result.appearance, "high-contrast-dark", label);
+      assert.deepEqual(
+        result.themeColors,
+        { [LIGHT_MEDIA]: "#000000", [DARK_MEDIA]: "#000000" },
+        label
+      );
+    }
+  }
+});
+
+test("the boot script only reads the 'theme' store: no skin key and no runtime storage writes", () => {
+  const result = boot(persisted({ theme: "dark", palette: "nord" }));
+  assert.deepEqual(result.storageKeys, ["theme"]);
+  assert.equal(
+    THEME_CONFIG.storageKey,
+    "theme",
+    "the persisted payload stays { state: { theme, palette }, version }"
+  );
+  assert.doesNotMatch(read("src/shared/utils/themeBootScript.ts"), /setItem|"skin"|'skin'/);
 });

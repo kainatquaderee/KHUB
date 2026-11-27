@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "policyId": "khub-rebrand-boundaries",
+  "decision": "deferred",
+  "deferredAt": "2026-11-27",
+  "deferredMirrors": [
+    {
+      "pattern": "docs/i18n/**",
+      "kind": "translated-docs-mirror",
+      "status": "deferred",
+      "reason": "10,273 files across 67 translated doc trees are generated mirrors, not hand-maintained display catalogs. WP-C changes only src/i18n/messages/*.json and bin/cli/locales/*.json; rewriting this mirror tree in the same change would touch protected instruction surfaces (AGENTS.md / CLAUDE.md / GEMINI.md / llm.txt copies) and 10k generated files without a reviewed regeneration owner.",
+      "revisit": "Separate, explicitly approved docs regeneration work package after the controlled catalog strategy is validated.",
+      "localeCount": 67,
+      "locales": [
+        "am",
+        "ar",
+        "az",
+        "bg",
+        "bn",
+        "bs",
+        "cs",
+        "da",
+        "de",
+        "el",
+        "es",
+        "et",
+        "fa",
+        "fi",
+        "fr",
+        "ga",
+        "gu",
+        "ha",
+        "he",
+        "hi",
+        "hr",
+        "hu",
+        "hy",
+        "id",
+        "ig",
+        "it",
+        "ja",
+        "ka",
+        "km",
+        "kn",
+        "ko",
+        "lt",
+        "lv",
+        "ml",
+        "mr",
+        "ms",
+        "mt",
+        "my",
+        "ne",
+        "nl",
+        "no",
+        "or",
+        "pa",
+        "phi",
+        "pl",
+        "pt",
+        "pt-BR",
+        "ro",
+        "ru",
+        "si",
+        "sk",
+        "sl",
+        "sr",
+        "sv",
+        "sw",
+        "ta",
+        "te",
+        "th",
+        "tr",
+        "uk-UA",
+        "ur",
+        "uz",
+        "vi",
+        "yo",
+        "zh-CN",
+        "zh-TW"
+      ]
+    }
+  ],
+  "protectedSurfaces": [
+    {
+      "pattern": "AGENTS.md",
+      "kind": "agent-instruction"
+    },
+    {
+      "pattern": "CLAUDE.md",
+      "kind": "agent-instruction"
+    },
+    {
+      "pattern": "GEMINI.md",
+      "kind": "agent-instruction"
+    },
+    {
+      "pattern": "llm.txt",
+      "kind": "agent-instruction"
+    },
+    {
+      "pattern": "**/AGENTS.md",
+      "kind": "agent-instruction-mirror"
+    },
+    {
+      "pattern": "**/CLAUDE.md",
+      "kind": "agent-instruction-mirror"
+    },
+    {
+      "pattern": "**/GEMINI.md",
+      "kind": "agent-instruction-mirror"
+    },
+    {
+      "pattern": "**/llm.txt",
+      "kind": "agent-instruction-mirror"
+    },
+    {
+      "pattern": "**/SKILL.md",
+      "kind": "skill-instruction"
+    }
+  ],
+  "wireTokenFiles": [
+    "src/sse/services/leaseContext.ts",
+    "src/sse/handlers/chatHelpers.ts",
+    "src/server/cors/origins.ts",
+    "src/lib/api/modelTestRunner.ts",
+    "src/lib/cliTools/checkToolConfigStatus.ts",
+    "src/app/api/cli-tools/qwen-settings/route.ts",
+    "config/cli-tools-manifest.json",
+    "src/lib/usage/internalUsageCommand.ts",
+    "src/types/databaseSettings.ts",
+    "src/lib/quota/redisQuotaStore.ts",
+    "src/lib/warmupScheduler/redisCircuitBreakerStore.ts",
+    "src/lib/proxyLogger.ts",
+    "bin/cli/commands/env.mjs",
+    "open-sse/mcp-server/tools/opsTools.ts",
+    "open-sse/mcp-server/server.ts"
+  ],
+  "outOfScopeGeneratedMirrors": [
+    {
+      "pattern": ".i18n-state.json",
+      "kind": "generated-i18n-state"
+    },
+    {
+      "pattern": "docs/reference/PROVIDER_REFERENCE.md",
+      "kind": "generated-provider-catalog"
+    },
+    {
+      "pattern": "docs/openapi.yaml",
+      "kind": "generated-api-reference"
+    }
+  ],
+  "approvalMarker": "config/khub/protected-surface-approval.json",
+  "approvalRule": "A change to any protected surface, deferred mirror, wire-token file or out-of-scope generated mirror requires an explicit marker with status=approved, an operator, a reason and the exact repo-relative path. WP-C carries no marker, so every such diff must be absent."
+}

@@ -135,15 +135,64 @@ describe("themeStore palette (Editions default, Classic option)", () => {
     expect(document.documentElement.getAttribute("data-ci-appearance")).toBe("editions");
   });
 
-  it("applyPalette is the single DOM rule: only 'classic' drops the attribute", async () => {
+  it("applyPalette follows the catalogue: Classic drops the kit attribute, every other skin is named", async () => {
     const { applyPalette } = await loadStore();
     const root = document.documentElement;
     applyPalette("classic");
     expect(root.hasAttribute("data-ci-appearance")).toBe(false);
+    expect(root.dataset.khubSkin).toBe("classic");
     applyPalette("editions");
     expect(root.getAttribute("data-ci-appearance")).toBe("editions");
+    expect(root.dataset.khubSkin).toBe("editions");
+    applyPalette("nord");
+    expect(root.getAttribute("data-ci-appearance")).toBe("nord");
+    expect(root.dataset.khubSkin).toBe("nord");
+    applyPalette("high-contrast-dark");
+    expect(root.getAttribute("data-ci-appearance")).toBe("high-contrast-dark");
+    expect(root.dataset.khubSkin).toBe("high-contrast-dark");
     applyPalette("anything-else");
     expect(root.getAttribute("data-ci-appearance")).toBe("editions");
+    expect(root.dataset.khubSkin).toBe("editions");
+  });
+
+  it("setPalette normalizes aliases to canonical IDs without a separate skin key", async () => {
+    const { default: useThemeStore } = await loadStore();
+    const root = document.documentElement;
+    useThemeStore.getState().setPalette("nevula" as never);
+    expect(useThemeStore.getState().palette).toBe("nebula");
+    expect(root.dataset.khubSkin).toBe("nebula");
+    expect(root.getAttribute("data-ci-appearance")).toBe("nebula");
+    useThemeStore.getState().setPalette("hc-dark" as never);
+    expect(useThemeStore.getState().palette).toBe("high-contrast-dark");
+    expect(root.dataset.khubSkin).toBe("high-contrast-dark");
+    expect(JSON.parse(localStorage.getItem("theme")!).state).toEqual({
+      theme: "system",
+      palette: "high-contrast-dark",
+    });
+  });
+
+  it("High Contrast Dark forces dark in the store and an explicit light exits to Editions", async () => {
+    const { default: useThemeStore } = await loadStore();
+    const root = document.documentElement;
+    useThemeStore.getState().setTheme("light");
+    useThemeStore.getState().setPalette("high-contrast-dark");
+    expect(useThemeStore.getState().theme).toBe("light");
+    expect(root.classList.contains("dark")).toBe(true);
+    expect(root.dataset.theme).toBe("dark");
+    expect(root.style.colorScheme).toBe("dark");
+    expect(root.dataset.khubSkin).toBe("high-contrast-dark");
+    expect(root.getAttribute("data-ci-appearance")).toBe("high-contrast-dark");
+
+    useThemeStore.getState().setTheme("light");
+    expect(useThemeStore.getState().palette).toBe("editions");
+    expect(root.classList.contains("dark")).toBe(false);
+    expect(root.dataset.theme).toBe("light");
+    expect(root.dataset.khubSkin).toBe("editions");
+    expect(root.getAttribute("data-ci-appearance")).toBe("editions");
+    expect(JSON.parse(localStorage.getItem("theme")!).state).toEqual({
+      theme: "light",
+      palette: "editions",
+    });
   });
 });
 
@@ -245,5 +294,15 @@ describe("themeStore → live theme-color (browser chrome follows the palette)",
     useThemeStore.getState().setPalette("classic");
     expect(document.querySelector("meta[data-theme-color-fallback]")).toBeNull();
     expect(themeColors()).toEqual({ [LIGHT_MEDIA]: C.light, [DARK_MEDIA]: C.dark });
+  });
+
+  it("High Contrast Dark paints both media tags black even with a stored light theme", async () => {
+    serverHead(true);
+    const { default: useThemeStore } = await loadStore();
+    useThemeStore.getState().setTheme("light");
+    useThemeStore.getState().setPalette("high-contrast-dark");
+    expect(themeColors()).toEqual({ [LIGHT_MEDIA]: "#000000", [DARK_MEDIA]: "#000000" });
+    useThemeStore.getState().setTheme("system");
+    expect(themeColors()).toEqual({ [LIGHT_MEDIA]: "#000000", [DARK_MEDIA]: "#000000" });
   });
 });

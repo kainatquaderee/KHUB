@@ -155,6 +155,22 @@ describe("theme-color tags across hydration (#19066)", () => {
     expect(tags()).toHaveLength(2);
   });
 
+  it("stored High Contrast Dark: black before paint, forced dark, still exactly 2 tags after hydration", async () => {
+    const { beforeHydration, serverTagsAfterHydration } = await loadPage(
+      { theme: "light", palette: "high-contrast-dark" },
+      true
+    );
+    expect(beforeHydration).toEqual({
+      [LIGHT]: themeColorBootValue("#000000"),
+      [DARK]: themeColorBootValue("#000000"),
+    });
+    expect(serverTagsAfterHydration).toBe(2);
+    expect(tags()).toHaveLength(2);
+    expect(byMedia()).toEqual({ [LIGHT]: "#000000", [DARK]: "#000000" });
+    expect(document.documentElement.dataset.khubSkin).toBe("high-contrast-dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
   it("nothing stored: the boot script parks nothing and the server tags stay as rendered", async () => {
     const { beforeHydration, serverTagsAfterHydration } = await loadPage(null);
     expect(beforeHydration).toEqual({

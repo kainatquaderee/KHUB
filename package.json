@@ -1,9 +1,10 @@
 {
   "name": "omniroute",
   "version": "3.8.53",
-  "description": "Unified AI router with 380 providers, RTK+Caveman compression, auto fallback, MCP/A2A, desktop, PWA, and OpenAI-compatible APIs.",
+  "description": "KHUB — unified AI router with 380 providers, RTK+Caveman compression, auto fallback, MCP/A2A, desktop, PWA, and OpenAI-compatible APIs (formerly OmniRoute).",
   "type": "module",
   "bin": {
+    "khub": "bin/omniroute.mjs",
     "omniroute": "bin/omniroute.mjs",
     "omniroute-reset-password": "bin/reset-password.mjs"
   },

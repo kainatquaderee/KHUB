@@ -52,6 +52,8 @@ describe("docs theme switch is bound to the root themeStore (#18078)", () => {
     localStorage.clear();
     document.documentElement.className = "";
     delete document.documentElement.dataset.theme;
+    delete document.documentElement.dataset.khubSkin;
+    document.documentElement.removeAttribute("data-ci-appearance");
     stubSystemTheme(false);
   });
 
@@ -134,6 +136,45 @@ describe("docs theme switch is bound to the root themeStore (#18078)", () => {
       input.dispatchEvent(new KeyboardEvent("keydown", { key: "d", bubbles: true }));
     });
     expect(isHtmlDark()).toBe(true);
+  });
+
+  it("High Contrast Dark keeps the switch dark and a click exits to Editions", async () => {
+    const { default: DocsThemeSwitch, useThemeStore } = await load();
+    act(() => useThemeStore.getState().setTheme("light"));
+    act(() => useThemeStore.getState().setPalette("high-contrast-dark"));
+    const element = render(<DocsThemeSwitch />);
+    const button = element.querySelector("button[data-theme-toggle]") as HTMLButtonElement;
+    const [sun, moon] = Array.from(button.querySelectorAll("svg"));
+
+    expect(useThemeStore.getState().theme).toBe("light");
+    expect(isHtmlDark()).toBe(true);
+    expect(button.getAttribute("aria-label")).toBe("switchToLightMode");
+    expect(moon.getAttribute("class")).toContain("bg-fd-accent");
+    expect(sun.getAttribute("class")).not.toContain("bg-fd-accent");
+
+    act(() => button.click());
+    expect(useThemeStore.getState().theme).toBe("light");
+    expect(useThemeStore.getState().palette).toBe("editions");
+    expect(isHtmlDark()).toBe(false);
+    expect(button.getAttribute("aria-label")).toBe("switchToDarkMode");
+  });
+
+  it("the 'd' hotkey leaves forced dark in one press", async () => {
+    const { DocsThemeHotKey, useThemeStore } = await load();
+    act(() => useThemeStore.getState().setPalette("high-contrast-dark"));
+    render(<DocsThemeHotKey />);
+    expect(isHtmlDark()).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "d" }));
+    });
+    expect(useThemeStore.getState().theme).toBe("light");
+    expect(useThemeStore.getState().palette).toBe("editions");
+    expect(isHtmlDark()).toBe(false);
+    expect(JSON.parse(localStorage.getItem("theme")!).state).toEqual({
+      theme: "light",
+      palette: "editions",
+    });
   });
 
   it("the docs layout disables next-themes and fills the slot with the store-bound switch", () => {

@@ -8,9 +8,11 @@ lastUpdated: 2026-11-03
 > **Status:** the dashboard is built on the **Keak CI UI Kit** (`@keak/cheaper-inference-ui-kit`), vendored
 > as the workspace `packages/ui-kit` (`@omniroute/ui-kit`; the upstream snapshot is pinned in
 > `packages/ui-kit/UPSTREAM.md` and guarded by `npm run check:ui-kit-snapshot`). Light is the canonical
-> theme; the default preference is `system`. The default palette is the kit's **Editions** appearance
+> theme; the default preference is `system`. The default palette is the kit's **KHUB Editions** appearance
 > (warm paper neutrals and the copper accent `#e5ac82`, `packages/ui-kit/src/ci-editions.css`); Settings →
-> Appearance → Color palette offers **Classic**, the kit's base tokens with the lime accent. Switzer is
+> Appearance → Color palette offers the 14-palette KHUB catalogue across five families
+> ([KHUB themes](../guides/KHUB_THEMES.md)), including Classic, the kit's base tokens with the lime
+> accent, and a manual-only High Contrast Dark skin. Switzer is
 > the single family for UI, display and code text (`--ci-font-ui`; `--ci-font-display` and
 > `--ci-font-mono` resolve to it), self-hosted by the kit itself (`packages/ui-kit/src/ci-fonts.css`,
 > imported by `ci-tokens.css`). Scripts Switzer lacks fall through glyph by glyph (`src/app/globals.css`):
@@ -47,24 +49,32 @@ lastUpdated: 2026-11-03
   before hydration) sets `data-theme="dark"|"light"` and toggles the `.dark` class on `<html>` together.
   The kit's dark token set is keyed on `data-theme="dark"` (`packages/ui-kit/src/ci-tokens.css`);
   OmniRoute's own dark overrides (the `.dark` block in `globals.css`) and the legacy Tailwind `dark:`
-  utilities key on the `.dark` class. There are no accent color presets: the accent always comes from the
-  kit, and a persisted preset from an older build is dropped when the store loads.
-- **Palettes.** Two, both from the kit (`src/shared/constants/appearancePalette.ts`): `editions`, the
-  default, and `classic`. Editions is the kit's `data-ci-appearance="editions"` attribute on `<html>`, which
-  `ci-editions.css` (imported by `ci-ui.css`) combines with `data-theme`; Classic is the attribute's
-  absence. The root layout server-renders the attribute, so a visitor with nothing stored (or no JS) gets
-  Editions on every surface — dashboard, login, `/status`, error pages, `/docs` and the PWA. The choice is
-  persisted next to the theme in the same `theme` store (`palette`, `setPalette()`, `applyPalette()` in
-  `src/store/themeStore.ts`) and applied before paint by `THEME_BOOT_SCRIPT`
-  (`src/shared/utils/themeBootScript.ts`, inlined in the layout's `<head>`), which removes the attribute
-  only when the stored palette is `"classic"`; `src/app/global-error.tsx`, outside the root layout, applies
-  it from the same store. Do not put `data-ci-appearance` on any other element: the kit matches it with
+  utilities key on the `.dark` class. Every palette also sets `data-khub-skin` to its canonical ID;
+  `high-contrast-dark` forces dark whatever the preference. There are no accent color presets: the
+  accent comes from the palette, and a persisted preset from an older build is dropped when the store loads.
+- **Palettes.** Fourteen canonical IDs in the KHUB catalogue (`src/shared/constants/themeCatalog.ts`,
+  allowlisted in `src/shared/constants/appearancePalette.ts`; full table in
+  [`KHUB themes`](../guides/KHUB_THEMES.md)): `editions` (the branded default), `classic`, `nord`,
+  `nebula`, `aurora`, the respectfully parodied `gutgub`/`youyou`/`gutlib`, `synthwave`, `terminal`,
+  `paper-ink`, `sunset-fm`, `cyber-lime` and the manual-only `high-contrast-dark`. Their labels and
+  families live in the catalogue; aliases (`nevula`, `highcontrast`, `hc-dark`) are read-only and unknown
+  values fail closed to `editions` (`khub-signature` is not a palette). Editions keeps the kit's
+  `data-ci-appearance="editions"` attribute on `<html>`; Classic removes it; every other skin is applied
+  through `data-khub-skin="<ID>"` by `src/app/khub-themes.css` (imported by `globals.css`), which mirrors
+  the catalogue's light/dark tokens. The root layout server-renders `data-ci-appearance="editions"`, so a
+  visitor with nothing stored (or no JS) gets Editions on every surface — dashboard, login, `/status`,
+  error pages, `/docs` and the PWA. The choice is persisted next to the theme in the same `theme` store
+  (`palette`, `setPalette()`, `applyPalette()` in `src/store/themeStore.ts`) and applied before paint by
+  `THEME_BOOT_SCRIPT` (`src/shared/utils/themeBootScript.ts`, inlined in the layout's `<head>`), which
+  resolves aliases, writes the canonical skin and removes the kit attribute only for `"classic"`;
+  `src/app/global-error.tsx`, outside the root layout, applies it from the same store. Do not put `data-ci-appearance` on any other element: the kit matches it with
   `html:root:has([data-ci-appearance="editions"])`, so one descendant would switch the whole document.
   The Editions `data-ci-editions-variant="landing"` variant is for marketing pages, not the dashboard.
   Browser chrome: the server renders the default, Editions, in `viewport.themeColor` (one tag per
   `prefers-color-scheme`) and the web manifest — `PWA_THEME_COLORS` in
-  `src/shared/constants/pwaThemeColors.ts`, the one mirror of the Editions `--ci-color-background`
-  (`#f3f1e9` / `#11120f`), pinned to `ci-editions.css` by `tests/unit/pwa-theme-colors.test.ts`. The live
+  `src/shared/constants/pwaThemeColors.ts`, which mirrors each catalogue palette's backgrounds
+  (Editions `#f3f1e9` / `#11120f`; High Contrast Dark `#000000` / `#000000`), pinned to `ci-editions.css`
+  by `tests/unit/pwa-theme-colors.test.ts`. The live
   `<meta name="theme-color">` then follows the stored palette and mode: `THEME_BOOT_SCRIPT` rewrites the
   tags before paint and the theme store's actions do it on every change (`resolveThemeColor()` /
   `applyThemeColor()` in `src/shared/utils/themeColorMeta.ts`, with `CLASSIC_PAGE_BACKGROUND` read from
@@ -260,8 +270,9 @@ generator's output (job `test-unit`).
   `scripts/dev/codemod-material-icons.mjs`
 - `src/shared/components/OmniRouteLogo.tsx`, `src/shared/constants/keakProducts.ts`
 - `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/shared/constants/appearancePalette.ts`,
-  `src/shared/constants/pwaThemeColors.ts`, `src/shared/constants/appConfig.ts`,
-  `src/shared/constants/statusColors.ts`
+  `src/shared/constants/themeCatalog.ts`, `src/app/khub-themes.css`, `docs/guides/KHUB_THEMES.md`,
+  `docs/guides/KHUB_PARODY_THEMES.md`, `src/shared/constants/pwaThemeColors.ts`,
+  `src/shared/constants/appConfig.ts`, `src/shared/constants/statusColors.ts`
 - `tests/unit/design-kit-bridge.test.ts`, `tests/unit/dashboard-kit-sweep.test.ts`,
   `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,
   `tests/unit/brand-pages-static.test.ts`, `tests/unit/ui/adapters/*.test.tsx`

@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "policyId": "khub-display-catalog-rebrand",
+  "sourceBrand": "OmniRoute",
+  "displayBrand": "KHUB",
+  "catalogRoots": [
+    {
+      "root": "src/i18n/messages",
+      "filenamePattern": "*.json"
+    },
+    {
+      "root": "bin/cli/locales",
+      "filenamePattern": "*.json"
+    }
+  ],
+  "replacements": [
+    {
+      "from": "OmniRoute",
+      "to": "KHUB",
+      "scope": "string-values-only",
+      "reason": "Only the human-facing brand spelling changes. Keys, env vars, commands, model prefixes and every other wire token stay byte-identical."
+    },
+    {
+      "from": "Khub",
+      "to": "KHUB",
+      "scope": "string-values-only",
+      "reason": "Migrates the interim mixed-case display value produced earlier in this worktree; idempotent once rewritten."
+    }
+  ],
+  "protectedTokens": [
+    {
+      "label": "X-OmniRoute-* headers",
+      "pattern": "[Xx]-[Oo]mni[Rr]oute"
+    },
+    {
+      "label": "x-omniroute-* CORS header",
+      "pattern": "[Xx]-omniroute-"
+    },
+    {
+      "label": "sk_omniroute default key marker",
+      "pattern": "[Ss]k_omniroute"
+    },
+    {
+      "label": "@omniroute/ package scope",
+      "pattern": "@omniroute/"
+    },
+    {
+      "label": "~/.omniroute data directory",
+      "pattern": "~/\\.omniroute"
+    },
+    {
+      "label": "omniroute/* model prefix",
+      "pattern": "omniroute/"
+    },
+    {
+      "label": "omniroute: cache prefix (lowercase only)",
+      "pattern": "omniroute:"
+    },
+    {
+      "label": "omniroute_* MCP tools",
+      "pattern": "omniroute_"
+    },
+    {
+      "label": "OMNIROUTE_* env vars",
+      "pattern": "OMNIROUTE_"
+    }
+  ],
+  "forbiddenTokens": [
+    "X-Khub",
+    "X-KHUB",
+    "sk_khub",
+    "@khub/",
+    "~/.khub",
+    "khub/",
+    "khub:",
+    "khub_",
+    "KHUB_"
+  ],
+  "interpolationPatterns": ["\\{[^{}\"\\n]*\\}", "%[a-zA-Z]"],
+  "outputFormat": {
+    "indent": 2,
+    "trailingNewline": true
+  }
+}

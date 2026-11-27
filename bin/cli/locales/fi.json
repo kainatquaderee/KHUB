@@ -1,7 +1,7 @@
 {
   "common": {
     "error": "Virhe: {message}",
-    "serverOffline": "OmniRoute-palvelin on offline. Käynnistä komennolla: omniroute serve",
+    "serverOffline": "KHUB-palvelin on offline. Käynnistä komennolla: omniroute serve",
     "authRequired": "Todennus vaaditaan. Aseta OMNIROUTE_API_KEY tai suorita: omniroute setup",
     "rateLimited": "Pyyntöraja ylitetty. Yritä uudelleen {seconds}s kuluttua.",
     "timeout": "Pyyntö aikakatkaistiin {ms}ms jälkeen.",
@@ -15,7 +15,7 @@
     "yesOpt": "Ohita vahvistuspyyntö"
   },
   "setup": {
-    "title": "OmniRoute-asennus",
+    "title": "KHUB-asennus",
     "passwordPrompt": "Ylläpitäjän salasana",
     "providerPrompt": "Oletuspalveluntarjoaja (jätä tyhjäksi ohittaaksesi)",
     "done": "Asennus valmis",
@@ -30,7 +30,7 @@
     "opencode": "Asenna ja määritä mukana toimitettu @omniroute/opencode-plugin OpenCodea varten"
   },
   "doctor": {
-    "title": "OmniRoute Doctor",
+    "title": "KHUB Doctor",
     "dbOk": "Tietokanta: OK ({path})",
     "dbMissing": "Tietokantaa ei ole alustettu — suorita `omniroute setup`",
     "portOk": "Portti {port}: käytettävissä",
@@ -82,7 +82,7 @@
       "providerOpt": "Suodata palveluntarjoajan nimen mukaan",
       "header": "Tunnus     Palveluntarjoaja Nimi                     Vanhenemisen tila Testin tila   Jäähyaika päättyy",
       "noData": "Palveluntarjoajayhteyksien tietoja ei ole saatavilla.",
-      "requiresServer": "providers status edellyttää, että OmniRoute-palvelin on käynnissä."
+      "requiresServer": "providers status edellyttää, että KHUB-palvelin on käynnissä."
     }
   },
   "keys": {
@@ -90,8 +90,8 @@
     "addDescription": "Lisää tai päivitä palveluntarjoajan API-avain",
     "listDescription": "Luettele kaikki määritetyt API-avaimet",
     "removeDescription": "Poista palveluntarjoajan API-avain",
-    "regenerateDescription": "Luo OmniRoute-API-avain uudelleen",
-    "revokeDescription": "Kumoa OmniRoute-API-avain",
+    "regenerateDescription": "Luo KHUB-API-avain uudelleen",
+    "revokeDescription": "Kumoa KHUB-API-avain",
     "revealDescription": "Näytä peittämätön API-avaimen arvo",
     "usageDescription": "Näytä API-avaimen viimeaikainen käyttö",
     "usageLimitOpt": "Viimeisimpien pyyntöjen määrä",
@@ -225,7 +225,7 @@
     "noCombo": "Vastaavaa yhdistelmää ei löytynyt. Määritä sellainen komennolla: omniroute combo create"
   },
   "chat": {
-    "description": "Lähetä kertaluonteinen keskustelukehote OmniRoutelle",
+    "description": "Lähetä kertaluonteinen keskustelukehote KHUBlle",
     "file": "Lue kehote tiedostosta",
     "stdin": "Lue kehote vakiosyötteestä",
     "system": "Järjestelmäkehote",
@@ -244,8 +244,8 @@
     }
   },
   "serve": {
-    "description": "Käynnistä OmniRoute-palvelin (oletustoiminto)",
-    "starting": "Käynnistetään OmniRoute-palvelin portissa {port}...",
+    "description": "Käynnistä KHUB-palvelin (oletustoiminto)",
+    "starting": "Käynnistetään KHUB-palvelin portissa {port}...",
     "ready": "Valmis osoitteessa http://localhost:{port}",
     "stopping": "Pysäytetään palvelinta (PID {pid})...",
     "stopped": "Palvelin pysäytetty.",
@@ -265,7 +265,7 @@
   },
   "backup": {
     "title": "Varmuuskopiointi",
-    "description": "Luo OmniRoute-tiedoista varmuuskopio",
+    "description": "Luo KHUB-tiedoista varmuuskopio",
     "creating": "Luodaan varmuuskopiota...",
     "done": "Varmuuskopio tallennettu polkuun {path}",
     "noFiles": "Ei varmuuskopioitavia tiedostoja (tietokantaa ei ole alustettu)",
@@ -277,7 +277,7 @@
     "noBackups": "Varmuuskopioita ei löytynyt.",
     "notFound": "Varmuuskopiota ei löytynyt: {name}",
     "confirmRestore": "Korvataanko nykyiset tiedot varmuuskopiolla ajankohdalta {ts}?",
-    "createDescription": "Luo varmuuskopio OmniRoute-tiedoista",
+    "createDescription": "Luo varmuuskopio KHUB-tiedoista",
     "nameOpt": "Mukautettu varmuuskopion nimi",
     "cloudOpt": "Lataa varmuuskopio pilvitallennustilaan",
     "encryptOpt": "Salaa varmuuskopio AES-256-GCM-salauksella",
@@ -321,7 +321,7 @@
     "clearFailed": "Välimuistin tyhjentäminen epäonnistui."
   },
   "redis": {
-    "description": "Käynnistä paikallinen Redis-säiliö yhdellä napsautuksella (Podman tai Docker) OmniRoute-välimuistia ja kiintiöiden seurantaa varten"
+    "description": "Käynnistä paikallinen Redis-säiliö yhdellä napsautuksella (Podman tai Docker) KHUB-välimuistia ja kiintiöiden seurantaa varten"
   },
   "test": {
     "description": "Testaa yhteys palveluntarjoajaan",
@@ -419,7 +419,7 @@
     }
   },
   "policy": {
-    "description": "Hallinnoi OmniRoute-valtuutuskäytäntöjä",
+    "description": "Hallinnoi KHUB-valtuutuskäytäntöjä",
     "list": {
       "description": "Luettele käytännöt",
       "kind": "Suodata tyypin mukaan (allow|deny|rate-limit|cost-cap)",
@@ -456,7 +456,7 @@
     }
   },
   "compression": {
-    "description": "Määritä OmniRoute-pakkausputken asetukset ja tarkastele sitä",
+    "description": "Määritä KHUB-pakkausputken asetukset ja tarkastele sitä",
     "status": {
       "description": "Näytä pakkauksen nykyinen tila ja asetukset"
     },
@@ -510,18 +510,18 @@
     "confirmRotate": "Vaihdetaanko tunnelin {type} URL-osoite? (uusi URL-osoite luodaan)"
   },
   "stop": {
-    "description": "Pysäytä OmniRoute-palvelin",
+    "description": "Pysäytä KHUB-palvelin",
     "stopping": "Pysäytetään palvelinta (PID {pid})...",
     "stopped": "Palvelin pysäytetty.",
     "notRunning": "Palvelin ei ole käynnissä.",
     "portFallback": "PID-tiedostoa ei löytynyt, yritetään pysäyttää portin perusteella..."
   },
   "restart": {
-    "description": "Käynnistä OmniRoute-palvelin uudelleen",
-    "restarting": "Käynnistetään OmniRoute-palvelinta uudelleen..."
+    "description": "Käynnistä KHUB-palvelin uudelleen",
+    "restarting": "Käynnistetään KHUB-palvelinta uudelleen..."
   },
   "dashboard": {
-    "description": "Avaa OmniRoute-hallintapaneeli selaimessa",
+    "description": "Avaa KHUB-hallintapaneeli selaimessa",
     "opening": "Avataan hallintapaneeli osoitteessa {url}",
     "urlOnly": "Tulosta hallintapaneelin URL-osoite avaamatta selainta",
     "tui": "Avaa interaktiivinen TUI-hallintapaneeli (päätelaitteen käyttöliittymä, 7 välilehteä)"
@@ -561,7 +561,7 @@
     }
   },
   "skills": {
-    "description": "Hallinnoi OmniRoute-taitoja (sandbox, builtin, custom, hybrid, skillssh)",
+    "description": "Hallinnoi KHUB-taitoja (sandbox, builtin, custom, hybrid, skillssh)",
     "list": {
       "description": "Luettele asennetut taidot",
       "type": "Suodata tyypin perusteella (sandbox|custom|builtin|hybrid|skillssh)",
@@ -634,7 +634,7 @@
     }
   },
   "memory": {
-    "description": "Hallitse OmniRouten keskustelumuistia (FTS5 + vector)",
+    "description": "Hallitse KHUBn keskustelumuistia (FTS5 + vector)",
     "search": {
       "description": "Hae muistimerkintöjä semanttisella kyselyllä",
       "type": "Suodata muistityypin mukaan (user|feedback|project|reference)",
@@ -792,7 +792,7 @@
     }
   },
   "webhooks": {
-    "description": "Hallitse OmniRoute-webhookeja",
+    "description": "Hallitse KHUB-webhookeja",
     "events": {
       "description": "Listaa kaikki käytettävissä olevat webhook-tapahtumatyypit"
     },
@@ -824,14 +824,14 @@
     }
   },
   "program": {
-    "description": "OmniRoute — Älykäs AI-reititin automaattisella fallbackilla",
+    "description": "KHUB — Älykäs AI-reititin automaattisella fallbackilla",
     "version": "Tulosta versio ja poistu",
     "output": "Tulostusmuoto (table, json, jsonl, csv)",
     "quiet": "Piilota epäolennaiset tulosteet",
     "no_color": "Poista väritulostus käytöstä",
     "timeout": "HTTP-pyyntöjen aikakatkaisu millisekunteina",
-    "api_key": "API-avain OmniRoute-palvelimelle",
-    "base_url": "OmniRoute-palvelimen perus-URL",
+    "api_key": "API-avain KHUB-palvelimelle",
+    "base_url": "KHUB-palvelimen perus-URL",
     "context": "Palvelimen konteksti/profiili tälle komennolle",
     "lang": "Aseta CLI-näyttökieli (ohittaa OMNIROUTE_LANG)"
   },
@@ -1082,7 +1082,7 @@
     }
   },
   "openapi": {
-    "description": "Käytä ja testaa OmniRoute OpenAPI -määritystä",
+    "description": "Käytä ja testaa KHUB OpenAPI -määritystä",
     "dump": {
       "description": "Tulosta OpenAPI-määritys vakiotulosteeseen tai tiedostoon",
       "format": "Tulostusmuoto: yaml|json (oletus: yaml)",
@@ -1152,7 +1152,7 @@
     }
   },
   "open": {
-    "description": "Avaa tietty OmniRoute-hallintapaneelin sivu selaimessa",
+    "description": "Avaa tietty KHUB-hallintapaneelin sivu selaimessa",
     "url": "Tulosta vain URL, älä avaa selainta"
   },
   "telemetry": {
@@ -1169,7 +1169,7 @@
     }
   },
   "sync": {
-    "description": "Synkronoi määritykset OmniRoute-instanssien välillä",
+    "description": "Synkronoi määritykset KHUB-instanssien välillä",
     "push": {
       "description": "Lähetä määritykset pilveen tai etäinstanssiin"
     },
@@ -1228,7 +1228,7 @@
     "filter": "Suodata tason mukaan (error,warn,info) — pilkuilla eroteltuina",
     "lines": "Haettavien rivien määrä",
     "timeout": "Yhteyden aikakatkaisu millisekunteina",
-    "baseUrl": "OmniRoute API:n perus-URL-osoite",
+    "baseUrl": "KHUB API:n perus-URL-osoite",
     "requestId": "Suodata pyynnön tunnuksen mukaan",
     "apiKey": "Suodata API-avaimen mukaan",
     "combo": "Suodata yhdistelmän nimen mukaan",
@@ -1244,10 +1244,10 @@
     "description": "Hallitse ilmaisinalueen kuvaketta",
     "show": "Näytä ilmaisinalueen kuvake (jos palvelin on käynnissä valitsimella --tray)",
     "hide": "Piilota ilmaisinalueen kuvake",
-    "quit": "Sulje OmniRoute ilmaisinalueen kautta"
+    "quit": "Sulje KHUB ilmaisinalueen kautta"
   },
   "autostart": {
-    "description": "Hallitse OmniRouten automaattista käynnistystä järjestelmän käynnistyessä (Linux: käyttäjän systemd-palvelu)",
+    "description": "Hallitse KHUBn automaattista käynnistystä järjestelmän käynnistyessä (Linux: käyttäjän systemd-palvelu)",
     "enable": "Ota automaattinen käynnistys käyttöön järjestelmän käynnistyessä",
     "disable": "Poista automaattinen käynnistys käytöstä järjestelmän käynnistyessä",
     "toggle": "Vaihda automaattisen käynnistyksen tilaa järjestelmän käynnistyessä",
@@ -1279,19 +1279,19 @@
     "scaffold": "Luo uuden liitännäisen perusrakenne"
   },
   "launch": {
-    "description": "Käynnistä Claude Code OmniRouteen yhdistettynä (paikallinen tai etäyhteys, --profile-valinnalla)",
+    "description": "Käynnistä Claude Code KHUBen yhdistettynä (paikallinen tai etäyhteys, --profile-valinnalla)",
     "token": "Tunnus, joka Claude-asiakasohjelman tulee lähettää (ANTHROPIC_AUTH_TOKEN)",
-    "notRunning": "OmniRoute ei ole tavoitettavissa portissa {port}. Käynnistä se komennolla 'omniroute serve'.",
+    "notRunning": "KHUB ei ole tavoitettavissa portissa {port}. Käynnistä se komennolla 'omniroute serve'.",
     "notFound": "'claude'-CLI:tä ei löytynyt PATH-ympäristömuuttujasta."
   },
   "run": {
-    "description": "Käynnistä tuettu CLI-kohde OmniRouten kautta"
+    "description": "Käynnistä tuettu CLI-kohde KHUBn kautta"
   },
   "setupClaude": {
-    "description": "Luo ~/.claude/profiles Claude Code -profiilit OmniRouten malliluettelosta"
+    "description": "Luo ~/.claude/profiles Claude Code -profiilit KHUBn malliluettelosta"
   },
   "connect": {
-    "description": "Yhdistä OmniRoute-etäpalvelimeen ja siirry etätilaan"
+    "description": "Yhdistä KHUB-etäpalvelimeen ja siirry etätilaan"
   },
   "tokens": {
     "description": "Hallitse rajattuja CLI-käyttötunnuksia (etätila)"
@@ -1300,10 +1300,10 @@
     "description": "Valitse palveluntarjoaja ja malli aktiiviselta palvelimelta ja määritä tuettu paikallinen CLI"
   },
   "launchCodex": {
-    "description": "Käynnistä Codex CLI OmniRouteen yhdistettynä (paikallinen tai VPS-etäpalvelin)"
+    "description": "Käynnistä Codex CLI KHUBen yhdistettynä (paikallinen tai VPS-etäpalvelin)"
   },
   "setupCodex": {
-    "description": "Luo ~/.codex-profiilitiedostot OmniRouten reaaliaikaisesta malliluettelosta"
+    "description": "Luo ~/.codex-profiilitiedostot KHUBn reaaliaikaisesta malliluettelosta"
   },
   "packs": {
     "description": "Hallitse valinnaisia ajonaikaisen ympäristön paketteja (ML / selainautomaatio)",
@@ -1316,7 +1316,7 @@
     "errUnknown": "tuntematon paketti: {name}",
     "errNoIndex": "paketti-indeksiä ei löytynyt; anna --source <dir>, joka sisältää paketin sisällön (työpöytäsovelluspaketit sisältävät sen sovelluksen vieressä)",
     "installed": "paketti \"{name}\" on asennettu ja tarkistettu hakemistossa {dir}",
-    "restartHint": "käynnistä OmniRoute-palvelin (tai työpöytäsovellus) uudelleen, jotta ajoympäristö ottaa paketin käyttöön",
+    "restartHint": "käynnistä KHUB-palvelin (tai työpöytäsovellus) uudelleen, jotta ajoympäristö ottaa paketin käyttöön",
     "removed": "paketti \"{name}\" poistettu",
     "notInstalled": "pakettia \"{name}\" ei ollut asennettu",
     "verifyOk": "kaikki asennetut paketit tarkistettu",

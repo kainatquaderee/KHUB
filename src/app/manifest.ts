@@ -3,9 +3,9 @@ import { PWA_THEME_COLORS } from "@/shared/constants/pwaThemeColors";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "OmniRoute AI 网关",
-    short_name: "OmniRoute",
-    description: "OmniRoute 是一个面向多提供者 LLM 的 AI 网关。一个端点连接您所有的 AI 提供者。",
+    name: "KHUB AI 网关",
+    short_name: "KHUB",
+    description: "KHUB 是一个面向多提供者 LLM 的 AI 网关。一个端点连接您所有的 AI 提供者。",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
@@ -42,15 +42,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/apple-touch-icon.png",
         sizes: "180x180",
         type: "image/png",
-      },
-    ],
-    screenshots: [
-      {
-        src: "/screenshots/dashboard.png",
-        sizes: "1280x720",
-        type: "image/png",
-        form_factor: "wide",
-        label: "OmniRoute Dashboard",
       },
     ],
   };

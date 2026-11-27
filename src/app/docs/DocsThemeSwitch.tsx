@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "@/shared/hooks/useTheme";
+import { isForcedDarkPalette } from "@/shared/constants/themeCatalog";
 import { cn } from "@/shared/utils/cn";
 
 const noopSubscribe = () => () => {};
@@ -27,9 +28,11 @@ const ACTIVE_ICON_CLASS = "bg-fd-accent text-fd-accent-foreground";
  * raw `theme`: from "system" on a dark OS, that first click would set "dark" and change nothing.
  */
 export default function DocsThemeSwitch({ className }: { className?: string }) {
-  const { isDark, setTheme } = useTheme();
+  const { isDark, palette, setTheme } = useTheme();
   const mounted = useIsMounted();
   const t = useTranslations("header");
+  // High Contrast Dark paints dark even with a stored "light"; its light exit resets the palette.
+  const darkActive = isDark || isForcedDarkPalette(palette);
 
   return (
     <button
@@ -38,17 +41,17 @@ export default function DocsThemeSwitch({ className }: { className?: string }) {
         "inline-flex items-center rounded-full border p-1 overflow-hidden *:rounded-full",
         className
       )}
-      aria-label={isDark ? t("switchToLightMode") : t("switchToDarkMode")}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={darkActive ? t("switchToLightMode") : t("switchToDarkMode")}
+      onClick={() => setTheme(darkActive ? "light" : "dark")}
       data-theme-toggle=""
     >
       <Sun
         fill="currentColor"
-        className={cn(ICON_CLASS, mounted && !isDark && ACTIVE_ICON_CLASS)}
+        className={cn(ICON_CLASS, mounted && !darkActive && ACTIVE_ICON_CLASS)}
       />
       <Moon
         fill="currentColor"
-        className={cn(ICON_CLASS, mounted && isDark && ACTIVE_ICON_CLASS)}
+        className={cn(ICON_CLASS, mounted && darkActive && ACTIVE_ICON_CLASS)}
       />
     </button>
   );
@@ -67,7 +70,8 @@ function isTypingTarget(target: EventTarget | null) {
  * listener per slot would toggle twice.
  */
 export function DocsThemeHotKey() {
-  const { isDark, setTheme } = useTheme();
+  const { isDark, palette, setTheme } = useTheme();
+  const darkActive = isDark || isForcedDarkPalette(palette);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -75,11 +79,11 @@ export function DocsThemeHotKey() {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key.toLowerCase() !== "d" || isTypingTarget(event.target)) return;
       event.preventDefault();
-      setTheme(isDark ? "light" : "dark");
+      setTheme(darkActive ? "light" : "dark");
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isDark, setTheme]);
+  }, [darkActive, setTheme]);
 
   return null;
 }

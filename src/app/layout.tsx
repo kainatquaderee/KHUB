@@ -32,9 +32,9 @@ export async function generateMetadata() {
   const customFaviconUrl = settings.customFaviconUrl || settings.customFaviconBase64;
 
   return {
-    title: `${instanceName} — AI Gateway for Multi-Provider LLMs`,
+    title: `${instanceName} — KHUB AI Gateway for Multi-Provider LLMs`,
     description:
-      "OmniRoute is an AI gateway for multi-provider LLMs. One endpoint for all your AI providers.",
+      "KHUB is an AI gateway for multi-provider LLMs. One endpoint for all your AI providers.",
     manifest: "/manifest.webmanifest",
     applicationName: instanceName,
     appleWebApp: {
@@ -51,6 +51,9 @@ export async function generateMetadata() {
         : [
             { url: "/favicon.ico", sizes: "any" },
             { url: "/favicon.svg", type: "image/svg+xml" },
+            { url: "/icon-16.png", type: "image/png", sizes: "16x16" },
+            { url: "/icon-32.png", type: "image/png", sizes: "32x32" },
+            { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
             { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
           ],
       apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],

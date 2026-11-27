@@ -13,14 +13,43 @@ import {
   type ComboConfigMode,
 } from "@/shared/constants/comboConfigMode";
 import {
-  APPEARANCE_PALETTES,
   normalizeAppearancePalette,
+  type AppearancePalette,
 } from "@/shared/constants/appearancePalette";
+import { isForcedDarkPalette, THEME_CATALOG } from "@/shared/constants/themeCatalog";
 import AccountEmailVisibilitySetting from "./AccountEmailVisibilitySetting";
+
+/** Existing translated keys are reused; new catalogue rows ship their own English label. */
+const PALETTE_LABEL_KEYS: Partial<Record<AppearancePalette, string>> = {
+  editions: "paletteEditions",
+  classic: "paletteClassic",
+};
+const PALETTE_DESCRIPTION_KEYS: Partial<Record<AppearancePalette, string>> = {
+  editions: "paletteEditionsDesc",
+  classic: "paletteClassicDesc",
+};
+const PALETTE_ICONS: Record<AppearancePalette, string> = {
+  editions: "brush",
+  classic: "history",
+  nord: "cloud",
+  nebula: "auto_awesome",
+  aurora: "eco",
+  gutgub: "code",
+  youyou: "play_arrow",
+  gutlib: "code_blocks",
+  synthwave: "palette",
+  terminal: "terminal",
+  "paper-ink": "description",
+  "sunset-fm": "sensors",
+  "cyber-lime": "bolt",
+  "high-contrast-dark": "contrast",
+};
 
 export default function AppearanceTab() {
   const { theme, setTheme, isDark, palette, setPalette } = useTheme();
   const t = useTranslations("settings");
+  // High Contrast Dark ignores the stored mode: reflect the painted state in the switch.
+  const darkActive = isDark || isForcedDarkPalette(palette);
 
   const isElectron = useIsElectron();
   const [autostartEnabled, setAutostartEnabled] = useState(false);
@@ -58,19 +87,6 @@ export default function AppearanceTab() {
     light: t("themeLight"),
     dark: t("themeDark"),
     system: t("themeSystem"),
-  };
-
-  const paletteOptions: Record<string, { label: string; description: string; icon: string }> = {
-    editions: {
-      label: t("paletteEditions"),
-      description: t("paletteEditionsDesc"),
-      icon: "brush",
-    },
-    classic: {
-      label: t("paletteClassic"),
-      description: t("paletteClassicDesc"),
-      icon: "history",
-    },
   };
 
   useEffect(() => {
@@ -142,8 +158,8 @@ export default function AppearanceTab() {
             <p className="text-sm text-text-muted">{t("switchThemes")}</p>
           </div>
           <Toggle
-            checked={isDark}
-            onChange={() => setTheme(isDark ? "light" : "dark")}
+            checked={darkActive}
+            onChange={() => setTheme(darkActive ? "light" : "dark")}
             ariaLabel={t("darkMode")}
           />
         </div>
@@ -191,20 +207,29 @@ export default function AppearanceTab() {
             value={palette}
             onValueChange={(next) => setPalette(normalizeAppearancePalette(next))}
           >
-            {APPEARANCE_PALETTES.map((option) => (
-              <RadioGroupItem
-                key={option}
-                card
-                value={option}
-                label={
-                  <span className="flex items-center gap-2">
-                    <Icon name={paletteOptions[option].icon} size={18} />
-                    {paletteOptions[option].label}
-                  </span>
-                }
-                description={paletteOptions[option].description}
-              />
-            ))}
+            {THEME_CATALOG.map((option) => {
+              const labelKey = PALETTE_LABEL_KEYS[option.id];
+              const descriptionKey = PALETTE_DESCRIPTION_KEYS[option.id];
+              return (
+                <RadioGroupItem
+                  key={option.id}
+                  card
+                  value={option.id}
+                  data-ci-theme-tile={option.id}
+                  label={
+                    <span className="flex items-center gap-2">
+                      <Icon name={PALETTE_ICONS[option.id]} size={18} />
+                      {labelKey ? getSettingsLabel(labelKey, option.label) : option.label}
+                    </span>
+                  }
+                  description={
+                    descriptionKey
+                      ? getSettingsLabel(descriptionKey, option.description)
+                      : `${option.family} · ${option.description}`
+                  }
+                />
+              );
+            })}
           </RadioGroup>
         </div>
 

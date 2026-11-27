@@ -1,4 +1,4 @@
-import { normalizeAppearancePalette } from "@/shared/constants/appearancePalette";
+import { isForcedDarkPalette, resolvePalette } from "@/shared/constants/themeCatalog";
 import { PAGE_BACKGROUND_BY_PALETTE } from "@/shared/constants/pwaThemeColors";
 
 /**
@@ -71,7 +71,10 @@ interface ThemeColorInput {
 }
 
 export function resolveThemeColor({ palette, theme, media, systemDark }: ThemeColorInput): string {
-  const bg = PAGE_BACKGROUND_BY_PALETTE[normalizeAppearancePalette(palette)];
+  const id = resolvePalette(palette);
+  const bg = PAGE_BACKGROUND_BY_PALETTE[id];
+  // Accessibility forced dark overrides a contradictory stored "light"/"system" for the chrome too.
+  if (isForcedDarkPalette(id)) return bg.dark;
   let dark: boolean;
   if (theme === "dark") dark = true;
   else if (theme !== "system") dark = false;

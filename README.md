@@ -9,6 +9,11 @@
 
 **Created by [Diego Souza](https://github.com/diegosouzapw)**
 
+**KHUB** is an OmniRoute rebrand based on OmniRoute: appearance and display names change, while API
+paths, OpenAI/Claude/Gemini wire contracts and the Electron `appId` (`online.omniroute.desktop`)
+stay unchanged. See the [KHUB theme catalogue](docs/guides/KHUB_THEMES.md) and the
+[parody theme rules](docs/guides/KHUB_PARODY_THEMES.md).
+
 <img src="./docs/diagrams/readme-hero.svg" width="100%" alt="OmniRoute — Never stop coding. Every AI tool → 380 providers — 150+ free — through one endpoint. Claude Code, Codex, Cursor, Cline, Copilot & Antigravity into FREE Claude / GPT / Gemini with auto-fallback. RTK + Caveman stacked compression saves 15–95% tokens (~89% avg) — never hit limits. 380 AI providers · 150+ free tiers · ~1.62B free tokens/mo · 20 routing strategies · $0 to start."/>
 
 </div>
@@ -1368,6 +1373,7 @@ Métricas canônicas em 2026-10-18: **1.976 vídeos únicos** · **20.220.289 vi
 <table>
   <tr><th align="left">Document</th><th align="left">Description</th></tr>
   <tr><td nowrap><b><a href="docs/architecture/ARCHITECTURE.md">Architecture</a></b></td><td>System architecture, data flow, and internals</td></tr>
+  <tr><td nowrap><b><a href="docs/guides/KHUB_THEMES.md">KHUB Themes</a></b></td><td>Canonical 14-palette catalogue, aliases, high-contrast behavior, unchanged compatibility IDs</td></tr>
   <tr><td nowrap><b><a href="docs/compression/COMPRESSION_GUIDE.md">Compression Guide</a></b></td><td>7-option pipeline: off / lite / standard / aggressive / ultra / RTK / stacked</td></tr>
   <tr><td nowrap><b><a href="docs/compression/RTK_COMPRESSION.md">RTK Compression</a></b></td><td>Command-output compression, filters, trust, verify, raw-output recovery</td></tr>
   <tr><td nowrap><b><a href="docs/compression/COMPRESSION_ENGINES.md">Compression Engines</a></b></td><td>Caveman, RTK, stacked pipelines, dashboard/API/MCP surfaces</td></tr>
