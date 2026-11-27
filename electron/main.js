@@ -547,7 +547,7 @@ function createTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Open OmniRoute",
+      label: "Open KHUB",
       click: () => showMainWindow(),
     },
     {
@@ -614,7 +614,7 @@ function createTray() {
     },
   ]);
 
-  tray.setToolTip("OmniRoute");
+  tray.setToolTip("KHUB");
   tray.setContextMenu(contextMenu);
 
   tray.on("double-click", () => showMainWindow());

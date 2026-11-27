@@ -100,7 +100,7 @@ lastUpdated: 2026-11-03
   `SidebarInset` (`packages/ui-kit/src/sidebar.tsx`), with OmniRoute's navigation logic in
   `src/shared/components/Sidebar.tsx`. A "skip to content" link to `#main-content` is the first focusable
   element. `src/shared/components/Header.tsx` holds the kit `SidebarTrigger` (the shell's only sidebar
-  toggle), the Keak `ProductSwitcher` and the command-palette opener; it shows the route title only while
+  toggle) and the command-palette opener; it shows the route title only while
   no kit `PageHeader` (`.ci-page-header`) is mounted inside `#main-content`, so a page with its own
   `PageHeader` has a single `h1`. `src/shared/components/CommandPalette.tsx` is a kit `Dialog`.
 - **Icons.** `<Icon name="material_name">` (`src/shared/components/Icon.tsx`) resolves the name (the
@@ -115,8 +115,7 @@ lastUpdated: 2026-11-03
 - **Brand.** `src/shared/components/OmniRouteLogo.tsx` wraps the kit: the default export `OmniRouteLogo`
   renders `ProductIcon product="omniroute" variant="glyph"` (inline SVG, `basePath`-safe) and
   `OmniRouteLockup` renders `ProductLockup product="omniroute"` (accessible name "Keak OmniRoute") or, for
-  white-label operators, their own `name`/`logoSrc`. Product-switcher destinations live in
-  `src/shared/constants/keakProducts.ts` (`KEAK_PRODUCT_LINKS`, `KEAK_ACTIVE_PRODUCT`). The standalone
+  white-label operators, their own `name`/`logoSrc`. The standalone
   screens — `src/app/login/page.tsx`, `src/app/status/page.tsx`, `src/app/maintenance/page.tsx`,
   `src/app/offline/page.tsx`, `src/app/not-found.tsx` and `src/shared/components/ErrorPageScaffold.tsx`
   — show the lockup; `tests/unit/brand-pages-static.test.ts` guards it.
@@ -268,7 +267,7 @@ generator's output (job `test-unit`).
   `src/shared/components/Sidebar.tsx`, `src/shared/components/Header.tsx`, `src/shared/components/CommandPalette.tsx`
 - `src/shared/components/Icon.tsx`, `src/shared/constants/iconMap.ts`, `scripts/dev/gen-icon-map.mjs`,
   `scripts/dev/codemod-material-icons.mjs`
-- `src/shared/components/OmniRouteLogo.tsx`, `src/shared/constants/keakProducts.ts`
+- `src/shared/components/OmniRouteLogo.tsx`
 - `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/shared/constants/appearancePalette.ts`,
   `src/shared/constants/themeCatalog.ts`, `src/app/khub-themes.css`, `docs/guides/KHUB_THEMES.md`,
   `docs/guides/KHUB_PARODY_THEMES.md`, `src/shared/constants/pwaThemeColors.ts`,

@@ -1,21 +1,17 @@
 // @vitest-environment jsdom
 /**
- * Kimi (Moonshot AI) official-partnership card accent (2026-07). Presentation
- * only — see src/app/(dashboard)/dashboard/providers/featuredProviders.ts.
+ * Kimi (Moonshot AI) and Cheaper Inference render like every other provider card.
  *
- * NOTE on placement: this mirrors the sibling
- * src/app/(dashboard)/dashboard/providers/components/__tests__/providerCardAudioBadge.test.tsx
- * in every way EXCEPT location. That co-located `__tests__/` pattern is not
- * actually picked up by either blocking vitest script today:
- *  - vitest.mcp.config.ts's "src/app/(dashboard)/**\/__tests__/**\/*.test.tsx"
- *    glob never matches anything (unescaped parens in tinyglobby — verified:
- *    `glob(["src/app/(dashboard)/**\/__tests__/**\/*.test.tsx"])` returns []).
- *  - test:vitest:ui runs `vitest run --config vitest.config.ts tests/unit/ui`,
- *    and that positional path filter excludes anything outside tests/unit/ui.
- * Living under tests/unit/ui/ guarantees this file is discovered by both
- * vitest.config.ts's own "tests/unit/**\/*.test.tsx" include entry AND the
- * test:vitest:ui CLI filter, so it actually runs in the blocking `test-vitest`
- * CI job (see .github/workflows/ci.yml).
+ * Before the KHUB rebrand these provider ids carried a sponsor accent: a blue/green
+ * `ci-brand-tint` card border plus a "Founding Friend" / "Open Source Friend" chip.
+ * The OWNER asked for the plain card presentation, so the tint and the badges are
+ * gone. Featured ordering (featuredProviders.ts) is unchanged and still guarded by
+ * tests/unit/featured-providers-rank.test.ts.
+ *
+ * The file name is historical: it used to assert the sponsor accent. It stays under
+ * tests/unit/ui/ because `test:vitest:ui` runs
+ * `vitest run --config vitest.config.ts tests/unit/ui`, so this is the location that
+ * is actually discovered by the blocking test-vitest CI job.
  */
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -28,7 +24,17 @@ vi.mock("@/shared/components/ProviderTestSlideOver", () => ({ default: () => nul
 vi.mock("@/shared/components/ProviderIcon", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 
-describe("ProviderCard — Kimi (Moonshot AI) founding-friend accent", () => {
+const SPONSOR_CARDS = [
+  ["kimi-coding", "Kimi Code CLI"],
+  ["kimi-web", "Kimi Web"],
+  ["moonshot", "Kimi"],
+  ["cheaperinference", "Cheaper Inference"],
+] as const;
+
+// Rendered in every casing the old badges used. `textContent` is normalized below.
+const SPONSOR_BADGE_TEXT = ["OFFICIAL SUPPORTER", "OPEN SOURCE FRIEND", "Founding Friend"];
+
+describe("ProviderCard — sponsor partners render as plain cards", () => {
   let container: HTMLDivElement | null = null;
   const mounted: { root: Root; container: HTMLDivElement }[] = [];
 
@@ -61,50 +67,30 @@ describe("ProviderCard — Kimi (Moonshot AI) founding-friend accent", () => {
     return container;
   }
 
-  it("renders the Founding Friend badge + Kimi-blue accent for kimi-coding", () => {
-    const el = renderCard("kimi-coding", "Kimi Code CLI");
-    // The next-intl mock returns the key itself; the providerText() helper falls
-    // back to the English default only when t.has is undefined (as it is here),
-    // so the rendered text is the hardcoded English fallback.
-    expect(el.textContent).toContain("Founding Friend");
-
-    // The card's own tint (KIMI_BRAND_COLOR = #1783FF) must be present: the kit Card takes the
-    // brand through `brandColor`, and the badge chip carries the same brand tint.
+  it.each(SPONSOR_CARDS)("%s carries no sponsor badge and no brand tint", (providerId, name) => {
+    const el = renderCard(providerId, name);
     const card = el.querySelector<HTMLElement>("[data-slot='card']");
-    expect(card?.classList.contains("ci-brand-tint")).toBe(true);
-    expect(card?.style.getPropertyValue("--ci-brand")).toBe("#1783ff");
-    const chip = Array.from(el.querySelectorAll<HTMLElement>("span.ci-brand-tint")).find((node) =>
-      node.textContent?.includes("Founding Friend")
-    );
-    expect(chip?.style.getPropertyValue("--ci-brand")).toBe("#1783ff");
-  });
+    expect(card).not.toBeNull();
 
-  it("tints the Cheaper Inference card with its own brand, not the catalog fallback", () => {
-    const el = renderCard("cheaperinference", "Cheaper Inference");
-    const card = el.querySelector<HTMLElement>("[data-slot='card']");
-    expect(card?.classList.contains("ci-brand-tint")).toBe(true);
-    expect(card?.style.getPropertyValue("--ci-brand")).toBe("#31f889");
-  });
-
-  it("renders the Founding Friend badge for kimi-web and moonshot too", () => {
-    const kimiWebEl = renderCard("kimi-web", "Kimi Web");
-    expect(kimiWebEl.textContent).toContain("Founding Friend");
-
-    const moonshotEl = renderCard("moonshot", "Kimi");
-    expect(moonshotEl.textContent).toContain("Founding Friend");
-  });
-
-  it("does NOT render the Kimi badge or accent for an unrelated provider", () => {
-    const el = renderCard("openai", "OpenAI");
-    expect(el.textContent).not.toContain("Founding Friend");
+    // ProviderCard must not pass `brandColor`: the kit Card then adds neither the
+    // `ci-brand-tint` class nor the `--ci-brand` custom property.
+    expect(card?.classList.contains("ci-brand-tint")).toBe(false);
+    expect(card?.style.getPropertyValue("--ci-brand")).toBe("");
     expect(el.querySelector(".ci-brand-tint")).toBeNull();
+
+    const text = (el.textContent ?? "").toUpperCase();
+    for (const badge of SPONSOR_BADGE_TEXT) {
+      expect(text).not.toContain(badge.toUpperCase());
+    }
   });
 
-  it("does NOT render the Kimi badge for the hidden kimi-coding-apikey alias id", () => {
-    // kimi-coding-apikey is hiddenFromDashboard (folds into the kimi-coding card),
-    // but featuredProviders.ts still lists it — verifying the card component
-    // itself would still flag it correctly if it were ever rendered directly.
-    const el = renderCard("kimi-coding-apikey", "Kimi Code API Key");
-    expect(el.textContent).toContain("Founding Friend");
+  it.each(SPONSOR_CARDS)("%s keeps the normal card chrome", (providerId, name) => {
+    const el = renderCard(providerId, name);
+
+    // Name, connected status badge, and the detail link are what every provider card
+    // renders — removing the sponsor presentation must not remove them.
+    expect(el.textContent).toContain(name);
+    expect(el.textContent).toContain("connected");
+    expect(el.querySelector(`a[href="/dashboard/providers/${providerId}"]`)).not.toBeNull();
   });
 });

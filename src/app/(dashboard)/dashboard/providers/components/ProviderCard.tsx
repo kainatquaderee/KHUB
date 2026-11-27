@@ -2,13 +2,12 @@
 
 import Icon from "@/shared/components/Icon";
 
-import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { brandTintVars } from "@omniroute/ui-kit/brand-tint";
 
 import { Badge, Button, Card, Modal, Toggle } from "@/shared/components";
 import ProviderTestSlideOver from "@/shared/components/ProviderTestSlideOver";
@@ -21,13 +20,6 @@ import {
 
 import { useDevinAgenticAuthStatus } from "../hooks/useDevinAgenticAuthStatus";
 import { CategoryDot } from "./CategoryDot";
-import {
-  CHEAPERINFERENCE_BRAND_COLOR,
-  KIMI_BRAND_COLOR,
-  SPONSOR_BRAND_COLORS,
-  isCheaperInferenceProviderId,
-  isKimiPartnerProviderId,
-} from "../featuredProviders";
 import { useOpenRouterProviderStat } from "../context/openRouterProviderStatsContext";
 
 interface ProviderStats {
@@ -106,9 +98,6 @@ interface ProviderCardProps {
 // Category identity dots (a legend shared with ProviderSummaryCard and the page's section
 // headers) come from the kit chart tokens via providerCategoryPalette.ts (KEA-7886, P8). Only
 // these auth types get their own dot; anything else keeps the API-key dot, as before.
-const SPONSOR_CHIP_CLASS =
-  "ci-brand-tint inline-flex items-center gap-0.5 rounded-full border border-[var(--ci-brand-border)] bg-[var(--ci-brand-subtle)] px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide leading-none text-[var(--ci-brand-ink)]";
-
 const CARD_DOT_CATEGORIES = new Set([
   "free",
   "no-auth",
@@ -355,12 +344,6 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   const isCompatible = isOpenAICompatibleProvider(providerId);
   const isCcCompatible = isClaudeCodeCompatibleProvider(providerId);
   const isAnthropicCompatible = isAnthropicCompatibleProvider(providerId) && !isCcCompatible;
-  // Open Source Friend highlights (Kimi 2026-07, Cheaper Inference 2026-07): UI-only
-  // accents, see featuredProviders.ts — never affect routing/fallback order.
-  const isKimiPartner = isKimiPartnerProviderId(provider.id || providerId);
-  const isCheaperInferencePartner = isCheaperInferenceProviderId(provider.id || providerId);
-  const isSponsorPartner = isKimiPartner || isCheaperInferencePartner;
-  const sponsorBrand = SPONSOR_BRAND_COLORS[provider.id || providerId];
   const openRouterStat = useOpenRouterProviderStat(provider.id || providerId);
   const codexServiceTierLabel =
     stats.codexServiceTier === "flex"
@@ -385,40 +368,6 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
         {codexServiceTierLabel}
       </span>
     ) : null;
-
-  // Kimi (Moonshot AI) official-partnership badge.
-  const kimiOfficialSupporterChip = isKimiPartner ? (
-    <span
-      key="kimi-official-supporter"
-      className={SPONSOR_CHIP_CLASS}
-      style={brandTintVars(KIMI_BRAND_COLOR) as CSSProperties}
-      title={providerText(
-        t,
-        "kimiOfficialSupporterTooltip",
-        "Kimi (Moonshot AI) is OmniRoute's founding Open Source Friend"
-      )}
-    >
-      <Icon name="verified" size={10} className="leading-none" />
-      {providerText(t, "kimiOfficialSupporterBadge", "Founding Friend")}
-    </span>
-  ) : null;
-
-  // Cheaper Inference Open Source Friend badge.
-  const cheaperInferenceSupporterChip = isCheaperInferencePartner ? (
-    <span
-      key="cheaperinference-supporter"
-      className={SPONSOR_CHIP_CLASS}
-      style={brandTintVars(CHEAPERINFERENCE_BRAND_COLOR) as CSSProperties}
-      title={providerText(
-        t,
-        "cheaperInferenceSupporterTooltip",
-        "Cheaper Inference backs OmniRoute as an Open Source Friend"
-      )}
-    >
-      <Icon name="verified" size={10} className="leading-none" />
-      {providerText(t, "cheaperInferenceSupporterBadge", "Open Source Friend")}
-    </span>
-  ) : null;
 
   const openRouterTooltipBits: string[] = [];
   if (openRouterStat?.headquarters)
@@ -494,14 +443,9 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
       >
         <Card
           padding="xs"
-          brandColor={sponsorBrand}
-          className={`h-full flex flex-col transition-colors cursor-pointer ${
-            sponsorBrand
-              ? // Sponsor accent: the kit Card takes the tint and the border colour from the brand;
-                // only the 2px weight and the soft glow are this card's own.
-                "border-2 hover:border-[var(--ci-brand-ink)] shadow-[0_4px_16px_-4px_color-mix(in_srgb,var(--ci-brand)_45%,transparent)]"
-              : "hover:bg-bg-subtle hover:border-primary/40"
-          } ${allDisabled ? "opacity-50" : ""} ${provider.deprecated ? "opacity-60" : ""}`}
+          className={`h-full flex flex-col transition-colors cursor-pointer hover:bg-bg-subtle hover:border-primary/40 ${
+            allDisabled ? "opacity-50" : ""
+          } ${provider.deprecated ? "opacity-60" : ""}`}
         >
           <div className="flex flex-col gap-2 h-full">
             {/* Row 1 — Identity: icon + full name + risk/category indicators */}
@@ -580,11 +524,8 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
               isCompatible ||
               isCcCompatible ||
               isAnthropicCompatible ||
-              isSponsorPartner ||
               Boolean(openRouterStat)) && (
               <div className="flex flex-wrap items-center gap-1">
-                {kimiOfficialSupporterChip}
-                {cheaperInferenceSupporterChip}
                 {openRouterPopularityChip}
                 {provider.serviceKinds?.map((k) => (
                   <Badge key={k} size="sm">

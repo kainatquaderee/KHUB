@@ -16,13 +16,13 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $tray = New-Object System.Windows.Forms.NotifyIcon
-$tray.Text = "OmniRoute - Port ${port}"
+$tray.Text = "KHUB - Port ${port}"
 $tray.Icon = [System.Drawing.SystemIcons]::Application
 $tray.Visible = $true
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
 
-$mDash = $menu.Items.Add("Open Dashboard")
+$mDash = $menu.Items.Add("Open KHUB Dashboard")
 $mDash.add_Click({ [System.Net.Sockets.TcpClient]::new("127.0.0.1", ${ipcPort}).Close(); Write-Host "DASHBOARD" })
 
 $mLogs = $menu.Items.Add("Show Logs")
@@ -31,7 +31,7 @@ $mLogs.add_Click({ Write-Host "LOGS" })
 $mAutostart = $menu.Items.Add("Enable Auto-start")
 $mAutostart.add_Click({ Write-Host "AUTOSTART" })
 
-$mQuit = $menu.Items.Add("Quit OmniRoute")
+$mQuit = $menu.Items.Add("Quit KHUB")
 $mQuit.add_Click({ Write-Host "QUIT"; [System.Windows.Forms.Application]::Exit() })
 
 $tray.ContextMenuStrip = $menu
