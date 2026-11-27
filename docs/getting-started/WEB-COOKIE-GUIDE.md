@@ -65,7 +65,7 @@ The setup process is the same for most Web Cookie providers.
 4. Refresh the page.
 5. Open an authenticated chat or conversation request.
 6. Copy the required authentication credentials.
-7. Open OmniRoute.
+7. Open KHUB.
 8. Go to **Providers → Add Provider**.
 9. Select your Web Cookie provider.
 10. Paste the credentials.

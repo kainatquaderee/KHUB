@@ -6,7 +6,7 @@ lastUpdated: 2026-11-27
 
 # KHUB themes
 
-KHUB is an OmniRoute rebrand: the routing, API and wire contracts are unchanged. The appearance
+The appearance
 catalogue in [`src/shared/constants/themeCatalog.ts`](../../src/shared/constants/themeCatalog.ts)
 is the canonical list of colour palettes; the allowlist in
 [`src/shared/constants/appearancePalette.ts`](../../src/shared/constants/appearancePalette.ts) and
@@ -24,9 +24,9 @@ There is no `khub-signature` palette: unknown stored values fail closed to `edit
 | `nord`               | Nord               | Atmospheric   | none                      | [Nord colour palette](https://www.nordtheme.com/)                                                  |
 | `nebula`             | Nebula             | Atmospheric   | `nevula`                  | [KHUB nebula skin](../../src/app/khub-themes.css#L113)                                             |
 | `aurora`             | Aurora             | Atmospheric   | none                      | [KHUB aurora skin](../../src/app/khub-themes.css#L148)                                             |
-| `gutgub`             | Gutgub             | Parody        | none                      | [GitHub](https://github.com/) · [parody convention](KHUB_PARODY_THEMES.md)                         |
-| `youyou`             | Youyou             | Parody        | none                      | [YouTube](https://www.youtube.com/) · [parody convention](KHUB_PARODY_THEMES.md)                   |
-| `gutlib`             | Gutlib             | Parody        | none                      | [GitLab](https://gitlab.com/) · [parody convention](KHUB_PARODY_THEMES.md)                         |
+| `gutgub`             | Gutgub             | Homage        | none                      | [GitHub](https://github.com/)                                                                      |
+| `youyou`             | Youyou             | Homage        | none                      | [YouTube](https://www.youtube.com/)                                                                |
+| `gutlib`             | Gutlib             | Homage        | none                      | [GitLab](https://gitlab.com/)                                                                      |
 | `synthwave`          | Synthwave          | Creative      | none                      | [KHUB synthwave skin](../../src/app/khub-themes.css#L288)                                          |
 | `terminal`           | Terminal           | Creative      | none                      | [KHUB terminal skin](../../src/app/khub-themes.css#L323)                                           |
 | `paper-ink`          | Paper Ink          | Creative      | none                      | [KHUB paper-ink skin](../../src/app/khub-themes.css#L358)                                          |
@@ -34,10 +34,10 @@ There is no `khub-signature` palette: unknown stored values fail closed to `edit
 | `cyber-lime`         | Cyber Lime         | Creative      | none                      | [KHUB cyber-lime skin](../../src/app/khub-themes.css#L428)                                         |
 | `high-contrast-dark` | High Contrast Dark | Accessibility | `highcontrast`, `hc-dark` | [WCAG 2.2 Contrast (Enhanced)](https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced.html) |
 
-Families are exactly `Signature`, `Atmospheric`, `Parody`, `Creative` and `Accessibility`.
+Families are exactly `Signature`, `Atmospheric`, `Homage`, `Creative` and `Accessibility`.
 One row exists per registered ID, with a unique label; aliases are accepted on read only and never
-rendered as selector tiles. The parody rows are attribution-only; their assets are original
-([parody theme rules](KHUB_PARODY_THEMES.md)).
+rendered as selector tiles. The three brand-inspired rows (`gutgub`, `youyou`, `gutlib`) are
+attribution-only and ship no third-party assets: every palette and skin is original KHUB artwork.
 
 ## High Contrast Dark
 
@@ -58,8 +58,8 @@ same test. The skin removes shadows and gradients, gives controls a 2px border a
 
 ## Compatibility identifiers
 
-The rebrand changes appearance and display names, not interoperability. API paths, OpenAI/Claude/
-Gemini wire contracts and Electron `appId` (`online.omniroute.desktop`) remain unchanged; storage
+The theme system changes appearance and display names, not interoperability. API paths, OpenAI/Claude/
+Gemini wire contracts and the Electron `appId` (`online.omniroute.desktop`) remain unchanged; storage
 values are canonical palette IDs (`editions`, `classic`, …, `high-contrast-dark`), not branding
 labels. `data-ci-appearance="editions"` is the kit's opt-in attribute; the other skins are applied
 through `data-khub-skin="<stable ID>"`.

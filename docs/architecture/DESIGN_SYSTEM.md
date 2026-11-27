@@ -249,7 +249,7 @@ generator's output (job `test-unit`).
   and reports the external font requests the page made (must be 0).
 - **Budget.** Under 200 KB per file (each staleness test asserts it); 500 KB is the hard cap for any README
   image (the SVG studio validator's rule).
-- **Copy unchanged, counts from the gate.** The rebrand changed type and palette, not words: each generator
+- **Copy unchanged, counts from the gate.** Type and palette changed; the words did not: each generator
   carries its diagram's copy in a `*_COPY` constant (or builds it from the live catalog) that is both the
   drawn text and the input of the outlining step. Canonical figures stay in `<text>` nodes (invisible once
   outlined, `fill-opacity:0`), read by `check:docs-counts`
@@ -270,7 +270,7 @@ generator's output (job `test-unit`).
 - `src/shared/components/OmniRouteLogo.tsx`
 - `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/shared/constants/appearancePalette.ts`,
   `src/shared/constants/themeCatalog.ts`, `src/app/khub-themes.css`, `docs/guides/KHUB_THEMES.md`,
-  `docs/guides/KHUB_PARODY_THEMES.md`, `src/shared/constants/pwaThemeColors.ts`,
+  `src/shared/constants/pwaThemeColors.ts`,
   `src/shared/constants/appConfig.ts`, `src/shared/constants/statusColors.ts`
 - `tests/unit/design-kit-bridge.test.ts`, `tests/unit/dashboard-kit-sweep.test.ts`,
   `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,

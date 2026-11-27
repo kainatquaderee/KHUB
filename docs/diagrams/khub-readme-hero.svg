@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="khubHeroTitle khubHeroDesc">
+  <title id="khubHeroTitle">KHUB — one endpoint for every model</title>
+  <desc id="khubHeroDesc">KHUB wordmark with the line "One endpoint. Every model." and three facts: 380 providers, 20 routing strategies, automatic failover.</desc>
+
+  <defs>
+    <linearGradient id="khubBg" x1="0" y1="0" x2="1200" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="0.55" stop-color="#101a33"/>
+      <stop offset="1" stop-color="#0a1224"/>
+    </linearGradient>
+    <linearGradient id="khubAccent" x1="0" y1="0" x2="360" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7cf5c4"/>
+      <stop offset="1" stop-color="#5ba8ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="320" rx="20" fill="url(#khubBg)"/>
+  <rect x="1" y="1" width="1198" height="318" rx="19" fill="none" stroke="#22304f"/>
+
+  <g opacity="0.5" stroke="#22304f" stroke-width="1">
+    <path d="M0 80h1200M0 160h1200M0 240h1200"/>
+    <path d="M200 0v320M400 0v320M600 0v320M800 0v320M1000 0v320"/>
+  </g>
+
+  <text x="72" y="138" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="96" font-weight="800" letter-spacing="4" fill="#f7faff">KHUB</text>
+
+  <text x="76" y="192" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="500" fill="#cfdcf5">One endpoint. Every model.</text>
+
+  <rect x="74" y="222" width="120" height="4" rx="2" fill="url(#khubAccent)"/>
+
+  <g font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="18" fill="#9fb2d4">
+    <text x="76" y="274">380 providers</text>
+    <text x="246" y="274">·</text>
+    <text x="276" y="274">20 routing strategies</text>
+    <text x="500" y="274">·</text>
+    <text x="530" y="274">automatic failover</text>
+  </g>
+
+  <g transform="translate(820 96)">
+    <rect width="308" height="128" rx="16" fill="#0f1a30" stroke="#2a3d63"/>
+    <circle cx="28" cy="30" r="6" fill="#7cf5c4"/>
+    <text x="46" y="36" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#cfdcf5">Request</text>
+
+    <path d="M28 56h252" stroke="#24406b" stroke-width="2"/>
+    <text x="28" y="86" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#8fa6cc">route</text>
+    <text x="92" y="86" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#e7efff">auto</text>
+    <text x="28" y="112" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#8fa6cc">fallback</text>
+    <text x="112" y="112" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#7cf5c4">automatic</text>
+  </g>
+</svg>
