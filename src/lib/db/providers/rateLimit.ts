@@ -7,6 +7,7 @@ import { invalidateDbCache } from "../readCache";
 import { backupDbFile } from "../backup";
 import { bumpProxyConfigGeneration } from "../settings";
 import { stripCodexChildCooldownsFromConnection } from "./codexAccountState";
+import { parseCooldownUntilMs } from "../../resilience/persistedResilienceCodec";
 
 interface StatementLike<TRow = unknown> {
   all: (...params: unknown[]) => TRow[];
@@ -41,9 +42,11 @@ export function setConnectionRateLimitUntil(connectionId: string, until: number 
     return;
   }
   const db = getDbInstance() as unknown as DbLike;
+  // Canonical ISO UTC write; legacy numeric TEXT rows remain readable via the
+  // shared parser below.
   db.prepare(
     "UPDATE provider_connections SET rate_limited_until = ?, updated_at = ? WHERE id = ?"
-  ).run(until, new Date().toISOString(), connectionId);
+  ).run(new Date(until).toISOString(), new Date().toISOString(), connectionId);
   // Routing-only write (rate_limited_until) — the /v1/models builder never reads
   // it, so bust the connections read cache without dropping the catalog cache.
   invalidateDbCache("connections", connectionId, { skipModelCatalog: true });
@@ -92,9 +95,10 @@ export function isConnectionRateLimited(connectionId: string): boolean {
   const db = getDbInstance() as unknown as DbLike;
   const row = db
     .prepare("SELECT rate_limited_until FROM provider_connections WHERE id = ?")
-    .get(connectionId) as { rate_limited_until?: number | null } | undefined;
+    .get(connectionId) as { rate_limited_until?: string | number | null } | undefined;
   if (!row?.rate_limited_until) return false;
-  return Date.now() < row.rate_limited_until;
+  const untilMs = parseCooldownUntilMs(row.rate_limited_until);
+  return untilMs !== null && untilMs > Date.now();
 }
 
 /**
@@ -108,10 +112,13 @@ export function getRateLimitedConnections(
   const now = Date.now();
   const rows = db
     .prepare(
-      "SELECT id, rate_limited_until FROM provider_connections WHERE provider = ? AND rate_limited_until > ?"
+      "SELECT id, rate_limited_until FROM provider_connections WHERE provider = ? AND rate_limited_until IS NOT NULL"
     )
-    .all(provider, now) as Array<{ id: string; rate_limited_until: number }>;
-  return rows.map((r) => ({ id: r.id, rateLimitedUntil: r.rate_limited_until }));
+    .all(provider) as Array<{ id: string; rate_limited_until: string | number }>;
+  return rows.flatMap((r) => {
+    const untilMs = parseCooldownUntilMs(r.rate_limited_until);
+    return untilMs !== null && untilMs > now ? [{ id: r.id, rateLimitedUntil: untilMs }] : [];
+  });
 }
 
 // ──────────────── T13: Stale Quota Display Fix ─────────────────────────────
@@ -136,27 +143,6 @@ export function getEffectiveQuotaUsage(
   // Window has passed — display should show 0 (pending next snapshot)
   if (Date.now() >= resetTime) return 0;
   return used;
-}
-
-/**
- * Normalize a persisted `rate_limited_until` to epoch ms.
- *
- * The column is written in two shapes: epoch ms by `setConnectionRateLimitUntil`
- * (the chat path) and an ISO-8601 string by `updateProviderConnection` (the
- * dashboard/AUTH path). Returns null when the value is absent or unparseable —
- * callers treat that as "no usable deadline".
- */
-function parseCooldownUntilMs(value: string | number | null | undefined): number | null {
-  if (value == null || value === "") return null;
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  const raw = String(value).trim();
-  if (raw === "") return null;
-  if (/^\d+$/.test(raw)) {
-    const numeric = Number(raw);
-    return Number.isFinite(numeric) ? numeric : null;
-  }
-  const parsed = Date.parse(raw);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 /**

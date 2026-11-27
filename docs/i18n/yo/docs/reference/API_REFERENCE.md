@@ -1813,11 +1813,11 @@ curl -X POST http://localhost:20128/api/v1/agents/tasks \
 
 OmniRoute ṣíṣàfihàn àwọn ọ̀nà ìkùnà fún ìgbà díẹ̀ mẹ́ta tí ó dá yàtọ̀; àwọn endpoint ìṣàkóso tó wà nísàlẹ̀ jẹ́ kí àwọn alákóso ka wọn kí wọ́n sì tún lè yí wọn padà:
 
-| Àyè              | Ibi ìpamọ́ ipò                               | Kíkà                                      | Túnṣe / nu kúrò                                           |
-| ---------------- | ------------------------------------------- | ----------------------------------------- | --------------------------------------------------------- |
-| Provider breaker | `domain_circuit_breakers` + in-memory       | `/api/monitoring/health`                  | `POST /api/resilience/reset`                              |
-| Ìtútù asopọ̀      | `rateLimitedUntil` lórí àwọn asopọ̀ provider | `/api/rate-limits`, `/api/providers/[id]` | (ó tún máa ṣiṣẹ́ lọ́wọ́ ara rẹ̀; nu kúrò nípasẹ̀ provider PUT) |
-| Ìdènà model      | In-memory model-availability registry       | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                  |
+| Àyè              | Ibi ìpamọ́ ipò                                         | Kíkà                                      | Túnṣe / nu kúrò                                           |
+| ---------------- | ----------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------- |
+| Provider breaker | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                              |
+| Ìtútù asopọ̀      | `rateLimitedUntil` lórí àwọn asopọ̀ provider           | `/api/rate-limits`, `/api/providers/[id]` | (ó tún máa ṣiṣẹ́ lọ́wọ́ ara rẹ̀; nu kúrò nípasẹ̀ provider PUT) |
+| Ìdènà model      | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                  |
 
 `PATCH /api/resilience` gba àwọn àtúnṣe provider breaker lábẹ́ `providerBreaker.oauth` àti `providerBreaker.apikey`. Profaili kọ̀ọ̀kan ń ṣe àtìlẹ́yìn fún `degradationThreshold`, `failureThreshold`, àti `resetTimeoutMs`; àwọn pápá kan náà wà ní Dashboard → Settings → Resilience.
 

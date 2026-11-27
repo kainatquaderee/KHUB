@@ -33,6 +33,7 @@ import {
   pruneDbBackupsOutsideMigrationWindow,
   resolveReusedPreMigrationSha,
 } from "./cleanup/backupPrune";
+import { purgeExpiredModelResilienceState } from "./modelLockoutState";
 
 interface CleanupResult {
   deleted: number;
@@ -1099,6 +1100,19 @@ export async function runScheduledCleanupPass(phase: "startup" | "periodic"): Pr
 
   // Independent of retention settings; runs after migrations, never on a request path.
   maintainSqlitePlannerStats();
+
+  try {
+    const purged = purgeExpiredModelResilienceState(Date.now());
+    if (purged.deleted > 0) {
+      console.log(`[Cleanup] Purged ${purged.deleted} stale model-resilience row(s).`);
+    }
+    if (purged.warning) console.warn(`[Cleanup] ${purged.warning}`);
+  } catch (err) {
+    console.warn(
+      "[Cleanup] Model-resilience purge failed (non-fatal):",
+      err instanceof Error ? err.name : "unknown error"
+    );
+  }
 }
 /**
  * Start the background cleanup scheduler. Runs cleanup on startup and then

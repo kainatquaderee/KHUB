@@ -1836,11 +1836,11 @@ Provider များ၊ account များ သို့မဟုတ် အာ
 
 OmniRoute သည် သီးခြားစီ လုပ်ဆောင်သည့် ယာယီပျက်ကွက်မှု ယန္တရား ၃ ခုကို ပံ့ပိုးပေးသည်။ အောက်ပါ စီမံခန့်ခွဲမှု endpoint များမှတစ်ဆင့် အော်ပရေတာများသည် ၎င်းတို့၏အခြေအနေကို ဖတ်ရှုနိုင်ပြီး အစားထိုးသတ်မှတ်နိုင်သည်-
 
-| Scope               | State storage                              | Read                                      | Reset / clear                                                                                   |
-| ------------------- | ------------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Provider breaker    | `domain_circuit_breakers` + in-memory      | `/api/monitoring/health`                  | `POST /api/resilience/reset`                                                                    |
-| Connection cooldown | `rateLimitedUntil` on provider connections | `/api/rate-limits`, `/api/providers/[id]` | (ပြန်လည်ဖွင့်ပေးမှုကို လိုအပ်သည့်အချိန်တွင် လုပ်ဆောင်သည်; provider PUT ဖြင့် ရှင်းလင်းနိုင်သည်) |
-| Model lockout       | In-memory model-availability registry      | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                                                        |
+| Scope               | State storage                                         | Read                                      | Reset / clear                                                                                   |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Provider breaker    | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                                                                    |
+| Connection cooldown | `rateLimitedUntil` on provider connections            | `/api/rate-limits`, `/api/providers/[id]` | (ပြန်လည်ဖွင့်ပေးမှုကို လိုအပ်သည့်အချိန်တွင် လုပ်ဆောင်သည်; provider PUT ဖြင့် ရှင်းလင်းနိုင်သည်) |
+| Model lockout       | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                                                        |
 
 `PATCH /api/resilience` သည် `providerBreaker.oauth` နှင့် `providerBreaker.apikey` အောက်တွင် provider breaker override များကို လက်ခံသည်။ Profile တစ်ခုစီတွင် `degradationThreshold`၊ `failureThreshold` နှင့် `resetTimeoutMs` တို့ကို သတ်မှတ်နိုင်သည်။ အဆိုပါ field များကို Dashboard → Settings → Resilience တွင်လည်း ပြသထားသည်။
 

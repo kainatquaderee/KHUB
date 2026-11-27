@@ -1932,11 +1932,11 @@ Outbound HTTP(S)/SOCKS proxies that can be assigned to providers, accounts, or g
 
 OmniRoute exposes three independent temporary-failure mechanisms; the management endpoints below let operators read and override them:
 
-| Scope               | State storage                              | Read                                      | Reset / clear                               |
-| ------------------- | ------------------------------------------ | ----------------------------------------- | ------------------------------------------- |
-| Provider breaker    | `domain_circuit_breakers` + in-memory      | `/api/monitoring/health`                  | `POST /api/resilience/reset`                |
-| Connection cooldown | `rateLimitedUntil` on provider connections | `/api/rate-limits`, `/api/providers/[id]` | (re-enables lazily; clear via provider PUT) |
-| Model lockout       | In-memory model-availability registry      | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`    |
+| Scope               | State storage                                         | Read                                      | Reset / clear                               |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------- | ------------------------------------------- |
+| Provider breaker    | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                |
+| Connection cooldown | `rateLimitedUntil` on provider connections            | `/api/rate-limits`, `/api/providers/[id]` | (re-enables lazily; clear via provider PUT) |
+| Model lockout       | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`    |
 
 `PATCH /api/resilience` accepts provider breaker overrides under `providerBreaker.oauth` and `providerBreaker.apikey`. Each profile supports `degradationThreshold`, `failureThreshold`, and `resetTimeoutMs`; the same fields are exposed in Dashboard → Settings → Resilience.
 

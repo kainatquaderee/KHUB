@@ -87,7 +87,6 @@ const RESETS_AFTER_RE = /resets? after (\d+h)?(\d+m)?(\d+s)?/i;
 const WILL_RESET_AFTER_RE = /will reset after (\d+h)?(\d+m)?(\d+s)?/i;
 const RESETS_IN_RE = /resets? in (\d+h)?(\d+m)?(\d+s)?/i;
 const RETRY_IN_SEC_RE = /please retry in (\d+(?:\.\d+)?)\s*s/i;
-const COOLDOWN_NUMERIC_RE = /^\d+(\.\d+)?$/;
 
 export type RetryHintProvenance = "header" | "google_rpc_retry_info" | "body_absolute" | "body";
 
@@ -158,6 +157,18 @@ export { CREDITS_EXHAUSTED_SIGNALS } from "./accountFallback/creditExhaustionSig
 import { isMistralAmbiguous401 } from "./accountFallback/mistralAmbiguousAuth.ts";
 import { isRegisteredFeatureFlagEnabled } from "../utils/registeredFeatureFlag.ts";
 import { boundedMap } from "@/lib/quota/boundedMap";
+import {
+  cooldownUntilMs as parseCanonicalCooldownUntilMs,
+  isRepresentableEpochMs,
+  sanitizeReasonCode,
+  type PersistedModelResilienceRow,
+} from "@/lib/resilience/persistedResilienceCodec";
+import {
+  persistClearAll,
+  persistDeletes,
+  persistLockCleared,
+  persistUpsert,
+} from "./accountFallback/persistenceBridge.ts";
 // #16797: providerErrorRules.ts stays free of src/ imports; its opt-in flags
 // (OpenCode Zen egress-IP lock, full-text rule bodies) read the flag store through
 // this injected reader. Not registered = flags off (release default).
@@ -738,6 +749,8 @@ function cleanupModelLockKey(key: string, now = Date.now()) {
   const entry = modelLockouts.get(key);
   if (entry && now > entry.until) {
     modelLockouts.delete(key);
+    // Keep the failure/escalation columns in DB while its window is still live.
+    persistLockCleared(key, now);
   }
 
   const failure = modelFailureState.get(key);
@@ -747,6 +760,7 @@ function cleanupModelLockKey(key: string, now = Date.now()) {
   if (now - failure.lastFailureAt <= failure.resetAfterMs + (failure.lastCooldownMs ?? 0)) return;
   if (modelLockouts.has(key)) return;
   modelFailureState.delete(key);
+  persistDeletes([key]);
 }
 
 function getModelLockBaseCooldown(
@@ -795,7 +809,7 @@ function ensureCleanupTimer() {
 
 /** @internal exported for testing only (both accessors below). */
 export function evictModelLockoutOverflow(): void {
-  evictLockoutOverflow(modelLockouts, modelFailureState);
+  evictLockoutOverflow(modelLockouts, modelFailureState, undefined, (key) => persistDeletes([key]));
 }
 export function getModelLockoutSize(): number {
   return modelLockouts.size;
@@ -822,28 +836,36 @@ export function lockModel(
   const key = getModelLockKey(provider, connectionId, model, reason);
   cleanupModelLockKey(key);
   const newUntil = Date.now() + cooldownMs;
+  const safeReason = sanitizeReasonCode(reason);
   // Preserve the longer cooldown if an existing lock has more time remaining.
   // Safe without a mutex: no await between get/set, so this runs atomically
   // within Node.js's single-threaded event loop.
   const existing = modelLockouts.get(key);
+  // A later failure may carry a lower escalation count (different rule, reset
+  // hint, or concurrent writer) while still extending the deadline. Escalation
+  // already earned must not be forgotten just because the new cooldown is longer.
+  const failureCount = Math.max(metadata.failureCount ?? 0, existing?.failureCount ?? 0) || 1;
   if (existing && existing.until > newUntil) {
-    if (metadata.failureCount && metadata.failureCount > existing.failureCount) {
-      existing.failureCount = metadata.failureCount;
+    if (failureCount > existing.failureCount) {
+      existing.failureCount = failureCount;
       existing.lastFailureAt = metadata.lastFailureAt ?? existing.lastFailureAt;
       existing.resetAfterMs = metadata.resetAfterMs ?? existing.resetAfterMs;
       modelLockouts.set(key, existing);
+      persistUpsert(key, existing, modelFailureState.get(key));
     }
     return;
   }
   const now = Date.now();
-  modelLockouts.set(key, {
-    reason,
+  const entry: ModelLockoutEntry = {
+    reason: safeReason,
     until: newUntil,
     lockedAt: now,
-    failureCount: metadata.failureCount ?? existing?.failureCount ?? 1,
+    failureCount,
     lastFailureAt: metadata.lastFailureAt ?? now,
     resetAfterMs: metadata.resetAfterMs ?? existing?.resetAfterMs ?? 0,
-  });
+  };
+  modelLockouts.set(key, entry);
+  persistUpsert(key, entry, modelFailureState.get(key));
 }
 
 // Lock only this exact provider/account/model tuple, never a quota family — see exactModelLock.ts.
@@ -851,7 +873,8 @@ export const lockExactModel = exactModelLock.createLockExactModel(
   modelLockouts,
   ensureCleanupTimer,
   cleanupModelLockKey,
-  getCanonicalLockProvider
+  getCanonicalLockProvider,
+  (key) => persistUpsert(key, modelLockouts.get(key), modelFailureState.get(key))
 );
 
 /**
@@ -958,6 +981,7 @@ export function recordModelLockoutFailure(
     lastFailureAt: now,
     resetAfterMs,
   });
+  persistUpsert(key, modelLockouts.get(key), modelFailureState.get(key));
 
   return {
     cooldownMs,
@@ -972,11 +996,13 @@ export function clearModelLock(
   model: string | null | undefined
 ): boolean {
   if (!model) return false;
-  return exactModelLock.clearMultiKeyLock(
-    modelLockouts,
-    modelFailureState,
-    getModelLockKeys(provider, connectionId, model)
+  const keys = getModelLockKeys(provider, connectionId, model);
+  const clearedKeys: string[] = [];
+  const cleared = exactModelLock.clearMultiKeyLock(modelLockouts, modelFailureState, keys, (key) =>
+    clearedKeys.push(key)
   );
+  if (clearedKeys.length > 0) persistDeletes(clearedKeys);
+  return cleared;
 }
 
 function isPassthroughCreditScope(provider: string | null | undefined): boolean {
@@ -1115,18 +1141,116 @@ export function decayModelFailureCount(
   if (!model) return { cleared: false, newFailureCount: 0 };
   // Every key shape: a 5xx lock lives under the exact key, a quota lock under the
   // family key — a healthy response must walk back whichever one is escalating.
-  return exactModelLock.decayFailureCounts(
+  const removedKeys: string[] = [];
+  const result = exactModelLock.decayFailureCounts(
     modelFailureState,
-    getModelLockKeys(provider, connectionId, model)
+    getModelLockKeys(provider, connectionId, model),
+    (key, cleared) => {
+      if (cleared) removedKeys.push(key);
+      else persistUpsert(key, modelLockouts.get(key), modelFailureState.get(key));
+    }
   );
+  if (removedKeys.length > 0) persistDeletes(removedKeys);
+  return result;
 }
 
 /**
  * Clear all in-memory model lockouts and failure state (for tests / full reset).
+ * `persist: false` is used during boot hydration to avoid erasing the rows that
+ * are being read back into memory.
  */
-export function clearAllModelLockouts(): void {
+export function clearAllModelLockouts(options: { persist?: boolean } = {}): void {
   modelLockouts.clear();
   modelFailureState.clear();
+  if (options.persist !== false) persistClearAll();
+}
+
+/**
+ * Hydrate lockouts from persisted rows without re-applying caps or duration math.
+ * Rows are validated and their state keys recomputed from the canonical provider;
+ * malformed, key-mismatched rows and rows past both the lock and escalation
+ * windows are skipped. An expired lock still restores its failure state while
+ * the escalation window is live, so the next failure keeps escalating.
+ */
+export function applyHydratedModelLockouts(
+  rows: PersistedModelResilienceRow[],
+  options: { nowMs?: number; replace?: boolean } = {}
+): { restored: number; skipped: number } {
+  const now = options.nowMs ?? Date.now();
+  if (options.replace === true) clearAllModelLockouts({ persist: false });
+  let restored = 0;
+  let skipped = 0;
+  for (const row of rows) {
+    const provider = typeof row.provider === "string" ? getCanonicalLockProvider(row.provider) : "";
+    const lockUntilMs = row.lockUntilMs;
+    const validScope = row.scope === "exact" || row.scope === "quota_family";
+    const validRow =
+      isRepresentableEpochMs(row.lockedAtMs) &&
+      isRepresentableEpochMs(row.lastFailureAtMs) &&
+      isRepresentableEpochMs(row.resetAfterMs) &&
+      row.resetAfterMs >= 0 &&
+      isRepresentableEpochMs(row.failureCount) &&
+      Number.isInteger(row.failureCount) &&
+      row.failureCount >= 0 &&
+      (lockUntilMs === null || isRepresentableEpochMs(lockUntilMs)) &&
+      (row.lastCooldownMs === null || isRepresentableEpochMs(row.lastCooldownMs));
+    if (
+      !provider ||
+      !row.connectionId ||
+      !row.modelScope ||
+      !validScope ||
+      !validRow ||
+      !row.stateKey
+    ) {
+      skipped += 1;
+      continue;
+    }
+    const hasActiveLock = lockUntilMs !== null && lockUntilMs > now;
+    const hasLiveWindow = row.lastFailureAtMs + row.resetAfterMs + (row.lastCooldownMs ?? 0) > now;
+    // A NULL deadline with no recorded cooldown has no escalation history to
+    // recover — that is how malformed deadlines are coerced when rows are read.
+    // A cleared lock (deadline nulled after expiry) keeps its cooldown column.
+    const hasRecoverableState =
+      hasActiveLock || (hasLiveWindow && (lockUntilMs !== null || row.lastCooldownMs !== null));
+    if (!hasRecoverableState) {
+      skipped += 1;
+      continue;
+    }
+    const expectedKey =
+      row.scope === "exact"
+        ? buildExactKey(provider, row.connectionId, row.modelScope)
+        : getModelLockKey(
+            provider,
+            row.connectionId,
+            row.modelScope,
+            row.reasonCode === "not_found" ? "not_found" : undefined,
+            row.reasonCode === "not_found" ? 404 : undefined
+          );
+    if (expectedKey !== row.stateKey) {
+      skipped += 1;
+      continue;
+    }
+    if (lockUntilMs !== null && hasActiveLock) {
+      modelLockouts.set(expectedKey, {
+        reason: sanitizeReasonCode(row.reasonCode),
+        until: lockUntilMs,
+        lockedAt: row.lockedAtMs,
+        failureCount: row.failureCount,
+        lastFailureAt: row.lastFailureAtMs,
+        resetAfterMs: row.resetAfterMs,
+      });
+    }
+    if (hasLiveWindow) {
+      modelFailureState.set(expectedKey, {
+        failureCount: row.failureCount,
+        lastFailureAt: row.lastFailureAtMs,
+        resetAfterMs: row.resetAfterMs,
+        lastCooldownMs: row.lastCooldownMs ?? undefined,
+      });
+    }
+    restored += 1;
+  }
+  return { restored, skipped };
 }
 
 /**
@@ -1163,7 +1287,7 @@ export function getModelLockoutInfo(
   if (!entry) return null;
   return {
     reason: entry.reason,
-    remainingMs: entry.until - Date.now(),
+    remainingMs: Math.max(0, entry.until - Date.now()),
     lockedAt: new Date(entry.lockedAt).toISOString(),
     failureCount: entry.failureCount,
   };
@@ -2507,12 +2631,7 @@ export function checkFallbackError(
  * epoch strings/numbers as well as ISO strings and Date objects (#3954).
  */
 export function cooldownUntilMs(value: string | number | Date | null | undefined): number {
-  if (value === null || value === undefined || value === "") return NaN;
-  if (value instanceof Date) return value.getTime();
-  if (typeof value === "number") return value;
-  const raw = value.trim();
-  if (COOLDOWN_NUMERIC_RE.test(raw)) return Number(raw);
-  return new Date(raw).getTime();
+  return parseCanonicalCooldownUntilMs(value) ?? Number.NaN;
 }
 
 /**

@@ -608,6 +608,26 @@ export async function registerNodejs(): Promise<void> {
     console.warn("[STARTUP] Could not clear stale crash cooldowns (non-fatal):", msg);
   }
 
+  // Hydrate absolute-timestamp model lockouts into the in-memory routing maps.
+  // Must stay after crash-cooldown cleanup and before routing is marked ready;
+  // best-effort by design, so a persistence failure cannot block boot.
+  try {
+    const { installAndHydrateModelLockoutPersistence } =
+      await import("@/lib/resilience/modelLockoutHydration");
+    const hydrated = installAndHydrateModelLockoutPersistence();
+    if (hydrated.restored > 0 || hydrated.purged > 0) {
+      console.log(
+        `[STARTUP] Model resilience hydration: ${hydrated.restored} restored, ${hydrated.purged} purged.`
+      );
+    }
+    if (hydrated.warning) console.warn(`[STARTUP] ${hydrated.warning}`);
+  } catch (err: unknown) {
+    console.warn(
+      "[STARTUP] Model lockout hydration failed (non-fatal):",
+      err instanceof Error ? err.name : "unknown error"
+    );
+  }
+
   await scanComboModelNameCollisionsAtBoot();
   try {
     const { warnProviderPrefixCollisionsAtBoot } =

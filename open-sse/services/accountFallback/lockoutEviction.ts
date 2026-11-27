@@ -25,7 +25,8 @@ export const MODEL_LOCKOUT_EVICTION_CAP = 1000;
 export function evictLockoutOverflow(
   modelLockouts: Map<string, ModelLockoutEntry>,
   modelFailureState: Map<string, ModelFailureState>,
-  cap: number = MODEL_LOCKOUT_EVICTION_CAP
+  cap: number = MODEL_LOCKOUT_EVICTION_CAP,
+  onEvictedKey?: (key: string) => void
 ): void {
   if (modelLockouts.size > cap) {
     const overflow = modelLockouts.size - cap;
@@ -39,6 +40,7 @@ export function evictLockoutOverflow(
     for (const key of evictableKeys) {
       modelLockouts.delete(key);
       modelFailureState.delete(key);
+      onEvictedKey?.(key);
     }
   }
   if (modelFailureState.size > cap) {
@@ -48,6 +50,7 @@ export function evictLockoutOverflow(
       if (evicted >= overflow) break;
       if (!modelLockouts.has(key)) {
         modelFailureState.delete(key);
+        onEvictedKey?.(key);
         evicted++;
       }
     }

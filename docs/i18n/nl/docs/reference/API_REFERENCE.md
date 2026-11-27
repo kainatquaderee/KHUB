@@ -1868,11 +1868,11 @@ Uitgaande HTTP(S)/SOCKS-proxy's die aan providers, accounts of globaal kunnen wo
 
 OmniRoute biedt drie onafhankelijke mechanismen voor tijdelijke storingen; met de onderstaande beheereindpunten kunnen operators deze uitlezen en overschrijven:
 
-| Bereik              | Statusopslag                               | Lezen                                     | Resetten / wissen                                          |
-| ------------------- | ------------------------------------------ | ----------------------------------------- | ---------------------------------------------------------- |
-| Provider-breaker    | `domain_circuit_breakers` + in-memory      | `/api/monitoring/health`                  | `POST /api/resilience/reset`                               |
-| Verbindingscooldown | `rateLimitedUntil` op providerverbindingen | `/api/rate-limits`, `/api/providers/[id]` | (wordt lazy opnieuw ingeschakeld; wissen via provider PUT) |
-| Modellockout        | In-memory model-availability registry      | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                   |
+| Bereik              | Statusopslag                                          | Lezen                                     | Resetten / wissen                                          |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------- |
+| Provider-breaker    | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                               |
+| Verbindingscooldown | `rateLimitedUntil` op providerverbindingen            | `/api/rate-limits`, `/api/providers/[id]` | (wordt lazy opnieuw ingeschakeld; wissen via provider PUT) |
+| Modellockout        | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                   |
 
 `PATCH /api/resilience` accepteert overschrijvingen voor provider-breakers onder `providerBreaker.oauth` en `providerBreaker.apikey`. Elk profiel ondersteunt `degradationThreshold`, `failureThreshold` en `resetTimeoutMs`; dezelfde velden zijn beschikbaar in Dashboard → Settings → Resilience.
 

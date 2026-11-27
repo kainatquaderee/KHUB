@@ -10,6 +10,7 @@
  */
 
 import type { ModelLockoutEntry, ModelFailureState } from "../accountFallback.ts";
+import { sanitizeReasonCode } from "@/lib/resilience/persistedResilienceCodec";
 
 /** Build the "exact" scoped lockout key — a distinct namespace from the quota-family key. */
 export function buildExactModelLockKey(
@@ -66,20 +67,21 @@ export function computeExactModelLockEntry(
 ): ModelLockoutEntry | null {
   const now = Date.now();
   const newUntil = now + cooldownMs;
+  const failureCount = Math.max(metadata.failureCount ?? 0, existing?.failureCount ?? 0) || 1;
   if (existing && existing.until > newUntil) {
-    if (!metadata.failureCount || metadata.failureCount <= existing.failureCount) return null;
+    if (failureCount <= existing.failureCount) return null;
     return {
       ...existing,
-      failureCount: metadata.failureCount,
+      failureCount,
       lastFailureAt: metadata.lastFailureAt ?? existing.lastFailureAt,
       resetAfterMs: metadata.resetAfterMs ?? existing.resetAfterMs,
     };
   }
   return {
-    reason,
+    reason: sanitizeReasonCode(reason),
     until: newUntil,
     lockedAt: now,
-    failureCount: metadata.failureCount ?? existing?.failureCount ?? 1,
+    failureCount,
     lastFailureAt: metadata.lastFailureAt ?? now,
     resetAfterMs: metadata.resetAfterMs ?? existing?.resetAfterMs ?? 0,
   };
@@ -92,12 +94,15 @@ export function computeExactModelLockEntry(
 export function clearMultiKeyLock(
   modelLockouts: Map<string, ModelLockoutEntry>,
   modelFailureState: Map<string, ModelFailureState>,
-  keys: string[]
+  keys: string[],
+  onClearedKey?: (key: string) => void
 ): boolean {
   let cleared = false;
   for (const key of keys) {
-    cleared = modelLockouts.delete(key) || cleared;
-    cleared = modelFailureState.delete(key) || cleared;
+    const removedLock = modelLockouts.delete(key);
+    const removedFailure = modelFailureState.delete(key);
+    if (removedLock || removedFailure) onClearedKey?.(key);
+    cleared = removedLock || removedFailure || cleared;
   }
   return cleared;
 }
@@ -138,7 +143,8 @@ export function createLockExactModel(
   modelLockouts: Map<string, ModelLockoutEntry>,
   ensureCleanupTimer: () => void,
   cleanupModelLockKey: (key: string) => void,
-  getCanonicalLockProvider: (provider: string) => string
+  getCanonicalLockProvider: (provider: string) => string,
+  onLockedKey?: (key: string) => void
 ) {
   return function lockExactModel(
     provider: string,
@@ -153,7 +159,10 @@ export function createLockExactModel(
     const key = buildExactModelLockKey(getCanonicalLockProvider(provider), connectionId, model);
     cleanupModelLockKey(key);
     const next = computeExactModelLockEntry(modelLockouts.get(key), reason, cooldownMs, metadata);
-    if (next) modelLockouts.set(key, next);
+    if (next) {
+      modelLockouts.set(key, next);
+      onLockedKey?.(key);
+    }
   };
 }
 
@@ -204,7 +213,8 @@ export function parseModelLockKey(key: string): {
  */
 export function decayFailureCounts(
   modelFailureState: Map<string, ModelFailureState>,
-  keys: string[]
+  keys: string[],
+  onDecayedKey?: (key: string, cleared: boolean) => void
 ): { cleared: boolean; newFailureCount: number } {
   let seen = 0;
   let dropped = 0;
@@ -217,9 +227,11 @@ export function decayFailureCounts(
     if (next === 0) {
       modelFailureState.delete(key);
       dropped += 1;
+      onDecayedKey?.(key, true);
     } else {
       modelFailureState.set(key, { ...failure, failureCount: next });
       newFailureCount = Math.max(newFailureCount, next);
+      onDecayedKey?.(key, false);
     }
   }
   return { cleared: seen > 0 && dropped === seen, newFailureCount };

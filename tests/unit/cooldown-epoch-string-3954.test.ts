@@ -1,5 +1,5 @@
 /**
- * TDD regression for #3954: the router keeps selecting rate-limited (429)
+ * AC-12 + TDD regression for #3954: the router keeps selecting rate-limited (429)
  * accounts because the connection cooldown is not respected.
  *
  * Root cause: `rate_limited_until` is a TEXT column, but the Antigravity
@@ -84,28 +84,41 @@ test("#3954 filterAvailableAccounts: excludes a numeric-epoch-string future cool
 
 // ── End-to-end: the write coercion that triggers the real bug ───────────────
 
-test("#3954 setConnectionRateLimitUntil stores a numeric string that selection still honors", async () => {
+test("#3954 setConnectionRateLimitUntil writes canonical ISO UTC; legacy numeric strings still read", async () => {
   const conn = await providersDb.createProviderConnection({
     provider: "antigravity",
     authType: "oauth",
     name: "AG 3954",
   });
   const connId = (conn as { id: string }).id;
-  providersDb.setConnectionRateLimitUntil(connId, Date.now() + HOUR);
+  const until = Date.now() + HOUR;
+  providersDb.setConnectionRateLimitUntil(connId, until);
 
   const db = core.getDbInstance() as unknown as {
-    prepare: (sql: string) => { get: (id: string) => { rate_limited_until: unknown } | undefined };
+    prepare: (sql: string) => {
+      get: (id: string) => { rate_limited_until: unknown } | undefined;
+      run: (...args: unknown[]) => unknown;
+    };
   };
   const row = db
     .prepare("SELECT rate_limited_until FROM provider_connections WHERE id = ?")
     .get(connId);
   const stored = row?.rate_limited_until;
 
-  // It is persisted in the numeric-string form (NOT ISO) — this is the trap.
-  assert.ok(
-    /^\d+(\.\d+)?$/.test(String(stored)),
-    `expected numeric epoch string, got ${String(stored)}`
-  );
-  // The selection filter must still treat this connection as unavailable.
+  assert.equal(stored, new Date(until).toISOString());
   assert.equal(isAccountUnavailable(String(stored)), true);
+  assert.equal(providersDb.isConnectionRateLimited(connId), true);
+
+  // Pre-feature rows written by an older process are numeric TEXT. They must
+  // still be honored by every reader through the one canonical parser.
+  db.prepare("UPDATE provider_connections SET rate_limited_until = ? WHERE id = ?").run(
+    `${until}.0`,
+    connId
+  );
+  assert.equal(isAccountUnavailable(`${until}.0`), true);
+  assert.equal(providersDb.isConnectionRateLimited(connId), true);
+  assert.deepEqual(
+    providersDb.getRateLimitedConnections("antigravity").map((entry) => entry.id),
+    [connId]
+  );
 });

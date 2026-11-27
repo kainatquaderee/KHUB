@@ -3,6 +3,7 @@ import { getDbInstance } from "./core";
 import { isExclusiveConnectionActivelyLeased } from "./exclusiveConnectionLeases";
 import { finishModelCatalogWriteWithBackup } from "./models/modelCatalogWriteSignals";
 import { ModelValidationError, type ValidationInput } from "../modelValidation/http";
+import { parseCooldownUntilMs } from "../resilience/persistedResilienceCodec";
 
 interface ConnectionRow {
   id: string;
@@ -48,8 +49,8 @@ function assertConnectionAvailable(
 ): asserts connection is ConnectionRow {
   if (!connection || connection.provider !== input.provider || connection.is_active !== 1)
     unavailable();
-  if (connection.rate_limited_until && Date.parse(connection.rate_limited_until) > Date.now())
-    unavailable();
+  const cooldownUntil = parseCooldownUntilMs(connection.rate_limited_until);
+  if (cooldownUntil !== null && cooldownUntil > Date.now()) unavailable();
   if (["banned", "expired", "credits_exhausted", "invalid"].includes(connection.test_status ?? ""))
     unavailable();
   if (isExclusiveConnectionActivelyLeased(input.connectionId)) unavailable();

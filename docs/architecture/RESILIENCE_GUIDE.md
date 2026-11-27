@@ -176,6 +176,14 @@ These persist until credentials change or an operator resets them. Do not overwr
 
 **Lazy recovery:** when `rateLimitedUntil` is past, connection becomes eligible again. On successful use, `clearAccountError()` clears all error fields.
 
+**Persisted deadline format:** the connection's `rate_limited_until` value in
+`provider_connections` is written as a canonical ISO UTC timestamp
+(`src/lib/db/providers/rateLimit.ts::setConnectionRateLimitUntil()`) and read
+through `parseCooldownUntilMs()` (`src/lib/resilience/persistedResilienceCodec.ts`),
+which also accepts legacy numeric-epoch text. Boot cleanup keeps future
+deadlines and clears only expired or unparseable non-terminal ones
+(`clearStaleCrashCooldowns()`).
+
 ### Claude OAuth usage wall: lower-priority lane + session-limit reset
 
 **Scope:** one Claude subscription (OAuth) connection. Both features are **opt-in per
@@ -385,11 +393,17 @@ increments the count (and escalates the cooldown) on failures within the
 escalation window. This success-decay is in addition to plain timer expiry —
 either path can re-enable a model.
 
-**State:** lockouts are held **in-memory** (per-process `Map`s of
+**State:** lockouts are held **in-memory** at runtime (per-process `Map`s of
 `ModelLockoutEntry` keyed by `provider:connectionId:model`, exact-scope locks by
-`provider:connectionId:exact:model`), not persisted to
-the DB — they are lost on restart. The _settings_ are persisted; the active
-lockout _state_ is ephemeral.
+`provider:connectionId:exact:model`) and mirrored to the `model_resilience_state`
+table (`src/lib/db/modelLockoutState.ts`, migration
+`226_model_resilience_state.sql`). Boot hydration
+(`installAndHydrateModelLockoutPersistence()` in `src/instrumentation-node.ts`)
+restores active deadlines and any still-live failure/escalation state. It is
+best-effort and restore-only: persisted durations are never re-clamped, expired
+locks keep their failure state while the escalation window is live, and active
+lockouts are never evicted to satisfy the soft cap. Reason codes are allowlisted
+before they are stored. The _settings_ are persisted separately.
 
 ---
 

@@ -18,6 +18,7 @@ import {
   type ModelLockoutInfo,
 } from "@omniroute/open-sse/services/accountFallback";
 import { clearRequestRejectedStreak } from "@omniroute/open-sse/services/requestRejectedStreak";
+import { sanitizeReasonCode } from "./persistedResilienceCodec";
 
 // Explicit whitelist: getRawProviderConnections() defaults to SELECT *, which would include
 // tokens, keys, emails and provider_specific_data.
@@ -153,7 +154,7 @@ function toCooldownConnection(
     lastErrorAt: text(row.lastErrorAt),
     lockouts: lockouts.map((lockout) => ({
       model: lockout.model,
-      reason: lockout.reason,
+      reason: sanitizeReasonCode(lockout.reason),
       remainingMs: lockout.remainingMs,
     })),
   };

@@ -1855,11 +1855,11 @@ curl -X POST http://localhost:20128/api/v1/agents/tasks \
 
 OmniRoute മൂന്ന് സ്വതന്ത്ര താൽക്കാലിക-പരാജയ സംവിധാനങ്ങൾ നൽകുന്നു; താഴെയുള്ള മാനേജ്മെന്റ് എൻഡ്പോയിന്റുകൾ ഉപയോഗിച്ച് ഓപ്പറേറ്റർമാർക്ക് അവ വായിക്കാനും override ചെയ്യാനും കഴിയും:
 
-| പരിധി               | സ്റ്റേറ്റ് സംഭരണം                             | വായിക്കുക                                 | റീസെറ്റ് / മായ്ക്കുക                                                    |
-| ------------------- | --------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
-| Provider breaker    | `domain_circuit_breakers` + in-memory         | `/api/monitoring/health`                  | `POST /api/resilience/reset`                                            |
-| Connection cooldown | Provider connections-ലുള്ള `rateLimitedUntil` | `/api/rate-limits`, `/api/providers/[id]` | (വീണ്ടും പ്രവർത്തനക്ഷമമാക്കുന്നത് lazy ആയി; provider PUT വഴി മായ്ക്കുക) |
-| Model lockout       | In-memory model-availability registry         | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                                |
+| പരിധി               | സ്റ്റേറ്റ് സംഭരണം                                     | വായിക്കുക                                 | റീസെറ്റ് / മായ്ക്കുക                                                    |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Provider breaker    | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                                            |
+| Connection cooldown | Provider connections-ലുള്ള `rateLimitedUntil`         | `/api/rate-limits`, `/api/providers/[id]` | (വീണ്ടും പ്രവർത്തനക്ഷമമാക്കുന്നത് lazy ആയി; provider PUT വഴി മായ്ക്കുക) |
+| Model lockout       | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                                |
 
 `PATCH /api/resilience` എന്നത് `providerBreaker.oauth`, `providerBreaker.apikey` എന്നിവയ്ക്ക് കീഴിലുള്ള provider breaker override-ുകൾ സ്വീകരിക്കുന്നു. ഓരോ profile-ും `degradationThreshold`, `failureThreshold`, `resetTimeoutMs` എന്നിവ പിന്തുണയ്ക്കുന്നു; ഇതേ ഫീൽഡുകൾ Dashboard → Settings → Resilience എന്നതിലും ലഭ്യമാണ്.
 

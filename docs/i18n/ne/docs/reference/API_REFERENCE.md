@@ -1878,11 +1878,11 @@ curl -X POST http://localhost:20128/api/v1/agents/tasks \
 
 OmniRoute ले तीनवटा स्वतन्त्र अस्थायी-विफलता संयन्त्रहरू उपलब्ध गराउँछ; तलका व्यवस्थापन endpoint हरूले अपरेटरहरूलाई तिनको स्थिति पढ्न र अधिलेखन गर्न दिन्छन्:
 
-| दायरा               | स्थिति भण्डारण                              | पढ्ने                                     | रिसेट / खाली गर्ने                                             |
-| ------------------- | ------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
-| Provider breaker    | `domain_circuit_breakers` + in-memory       | `/api/monitoring/health`                  | `POST /api/resilience/reset`                                   |
-| Connection cooldown | प्रदायक connection हरूमा `rateLimitedUntil` | `/api/rate-limits`, `/api/providers/[id]` | (ढिलो गरी पुनःसक्षम हुन्छ; provider PUT मार्फत खाली गर्नुहोस्) |
-| Model lockout       | In-memory model-availability registry       | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                       |
+| दायरा               | स्थिति भण्डारण                                        | पढ्ने                                     | रिसेट / खाली गर्ने                                             |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| Provider breaker    | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                                   |
+| Connection cooldown | प्रदायक connection हरूमा `rateLimitedUntil`           | `/api/rate-limits`, `/api/providers/[id]` | (ढिलो गरी पुनःसक्षम हुन्छ; provider PUT मार्फत खाली गर्नुहोस्) |
+| Model lockout       | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`                       |
 
 `PATCH /api/resilience` ले `providerBreaker.oauth` र `providerBreaker.apikey` अन्तर्गत provider breaker अधिलेखनहरू स्वीकार गर्छ। प्रत्येक profile ले `degradationThreshold`, `failureThreshold`, र `resetTimeoutMs` समर्थन गर्छ; यही fields Dashboard → Settings → Resilience मा पनि उपलब्ध छन्।
 

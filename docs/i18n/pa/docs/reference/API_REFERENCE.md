@@ -1903,11 +1903,11 @@ curl -X POST http://localhost:20128/api/v1/agents/tasks \
 
 OmniRoute ਅਸਥਾਈ ਅਸਫਲਤਾਵਾਂ ਲਈ ਤਿੰਨ ਸੁਤੰਤਰ ਮਕੈਨਿਜ਼ਮ ਪ੍ਰਦਾਨ ਕਰਦਾ ਹੈ; ਹੇਠਾਂ ਦਿੱਤੇ ਪ੍ਰਬੰਧਨ ਐਂਡਪੌਇੰਟ ਓਪਰੇਟਰਾਂ ਨੂੰ ਇਨ੍ਹਾਂ ਦੀ ਸਥਿਤੀ ਪੜ੍ਹਨ ਅਤੇ ਓਵਰਰਾਈਡ ਕਰਨ ਦੀ ਆਗਿਆ ਦਿੰਦੇ ਹਨ:
 
-| Scope               | State storage                              | Read                                      | Reset / clear                               |
-| ------------------- | ------------------------------------------ | ----------------------------------------- | ------------------------------------------- |
-| Provider breaker    | `domain_circuit_breakers` + in-memory      | `/api/monitoring/health`                  | `POST /api/resilience/reset`                |
-| Connection cooldown | `rateLimitedUntil` on provider connections | `/api/rate-limits`, `/api/providers/[id]` | (re-enables lazily; clear via provider PUT) |
-| Model lockout       | In-memory model-availability registry      | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`    |
+| Scope               | State storage                                         | Read                                      | Reset / clear                               |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------- | ------------------------------------------- |
+| Provider breaker    | `domain_circuit_breakers` + in-memory                 | `/api/monitoring/health`                  | `POST /api/resilience/reset`                |
+| Connection cooldown | `rateLimitedUntil` on provider connections            | `/api/rate-limits`, `/api/providers/[id]` | (re-enables lazily; clear via provider PUT) |
+| Model lockout       | In-memory maps hydrated from `model_resilience_state` | `GET /api/resilience/model-cooldowns`     | `DELETE /api/resilience/model-cooldowns`    |
 
 `PATCH /api/resilience` `providerBreaker.oauth` ਅਤੇ `providerBreaker.apikey` ਦੇ ਅਧੀਨ ਪ੍ਰੋਵਾਈਡਰ ਬ੍ਰੇਕਰ ਓਵਰਰਾਈਡ ਸਵੀਕਾਰ ਕਰਦਾ ਹੈ। ਹਰ ਪ੍ਰੋਫ਼ਾਈਲ `degradationThreshold`, `failureThreshold`, ਅਤੇ `resetTimeoutMs` ਨੂੰ ਸਮਰਥਨ ਦਿੰਦੀ ਹੈ; ਇਹੀ ਫੀਲਡ Dashboard → Settings → Resilience ਵਿੱਚ ਵੀ ਉਪਲਬਧ ਹਨ।
 
