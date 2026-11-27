@@ -401,6 +401,17 @@ const nextConfig = {
         use: [{ loader: join(projectRoot, "scripts/build/localeMessagesLoader.cjs") }],
       },
     ];
+    // undici >= 8.12.2 binds the zstd decompressor at module scope
+    // (`createZstdDecompress.bind(...)`), which throws in the Next.js 16.4.6
+    // webpack page-data workers because their node:zlib exposes no zstd factory.
+    // The loader rewrites only that one property into a runtime guard; it is
+    // scoped to the hoisted undici copy and throws if the upstream shape
+    // changes. See scripts/build/undiciDecompressZstdGuardLoader.cjs.
+    config.module.rules.unshift({
+      test: /undici[\\/]lib[\\/]interceptor[\\/]decompress\.js$/,
+      enforce: "pre",
+      use: [{ loader: join(projectRoot, "scripts/build/undiciDecompressZstdGuardLoader.cjs") }],
+    });
     const infrastructureLogging = config.infrastructureLogging || {};
     config.infrastructureLogging = {
       ...infrastructureLogging,
